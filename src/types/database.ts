@@ -2,9 +2,11 @@ export interface TutorProfile {
   id: string;
   user_id: string;
   name: string;
+  full_name?: string; // For compatibility with existing code
   email: string;
   bio: string;
   subjects: string[];
+  qualifications?: string[];
   hourly_rate: number;
   availability: {
     total_hours: number;
@@ -13,6 +15,9 @@ export interface TutorProfile {
     };
   };
   rating: number;
+  total_sessions?: number;
+  image_url?: string;
+  video_url?: string;
   created_at: string;
   updated_at: string;
 }
@@ -35,8 +40,11 @@ export interface Session {
   subject: string;
   start_time: string;
   end_time: string;
-  status: 'scheduled' | 'completed' | 'cancelled';
+  duration?: number; // Duration in minutes
+  status: 'scheduled' | 'completed' | 'cancelled' | 'pending';
   notes: string;
+  rating?: number;
+  feedback?: string;
   created_at: string;
   updated_at: string;
   student_profiles?: StudentProfile;

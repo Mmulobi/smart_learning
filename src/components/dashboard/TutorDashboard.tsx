@@ -101,14 +101,27 @@ export function TutorDashboard() {
       }
 
       // Only fetch other data if we have a valid tutor profile
-      const [tutorSessions, tutorEarnings] = await Promise.all([
-        DatabaseService.getSessionsByTutor(tutorProfile.id),
-        DatabaseService.getEarningsByTutor(tutorProfile.id),
-      ]);
+      try {
+        // Get sessions first
+        const tutorSessions = await DatabaseService.getSessionsByTutor(tutorProfile.id);
+        setSessions(tutorSessions);
+        
+        // Try to get earnings, but handle the case where the table doesn't exist
+        try {
+          const tutorEarnings = await DatabaseService.getEarningsByTutor(tutorProfile.id);
+          setEarnings(tutorEarnings);
+        } catch (earningsError) {
+          console.warn('Earnings table may not exist:', earningsError);
+          // Set empty earnings array if the table doesn't exist
+          setEarnings([]);
+        }
 
-      setProfile(tutorProfile);
-      setSessions(tutorSessions);
-      setEarnings(tutorEarnings);
+        setProfile(tutorProfile);
+      } catch (dataError) {
+        console.error('Error fetching dashboard data:', dataError);
+        // Still allow dashboard to load even if some data fails
+        setProfile(tutorProfile);
+      }
       
     } catch (error) {
       console.error('Error loading dashboard:', error);
@@ -199,16 +212,21 @@ export function TutorDashboard() {
   const handleUpdateProfile = async (updatedProfile: Partial<TutorProfile>) => {
     try {
       if (!profile) return;
-      const { error } = await supabase
-        .from('tutor_profiles')
-        .update(updatedProfile)
-        .eq('user_id', profile.user_id);
       
-      if (error) throw error;
+      // Log the update operation for debugging
+      console.log('Updating profile with:', updatedProfile);
+      
+      // Use DatabaseService for consistency
+      await DatabaseService.updateTutorProfile(profile.user_id, updatedProfile);
+      
+      // Show success message
+      setError('Profile updated successfully!');
+      
+      // Reload dashboard data
       await loadDashboardData();
     } catch (error) {
       console.error('Error updating profile:', error);
-      setError('Failed to update profile');
+      setError(error instanceof Error ? error.message : 'Failed to update profile');
     }
   };
 

@@ -56,27 +56,36 @@ export function ProfileShowcase({
   const handleImageUpload = async (file: File) => {
     try {
       setUploadingImage(true);
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${profile.id}-profile.${fileExt}`;
-      const filePath = `images/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('tutor-images')
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('tutor-images')
-        .getPublicUrl(filePath);
-
-      onUpdateProfile({
-        ...profile,
-        image_url: publicUrl,
-      });
+      
+      // For now, let's use a data URL approach as a fallback
+      // This will encode the image directly in the profile data
+      // Note: This is not ideal for production but will work for demo purposes
+      const reader = new FileReader();
+      
+      reader.onload = async (e) => {
+        if (e.target?.result) {
+          const dataUrl = e.target.result as string;
+          console.log('Image converted to data URL');
+          
+          // Update the profile with the data URL
+          onUpdateProfile({
+            ...profile,
+            image_url: dataUrl,
+          });
+          
+          setUploadingImage(false);
+        }
+      };
+      
+      reader.onerror = (error) => {
+        console.error('Error reading file:', error);
+        setUploadingImage(false);
+      };
+      
+      // Read the file as a data URL
+      reader.readAsDataURL(file);
     } catch (error) {
-      console.error('Error uploading image:', error);
-    } finally {
+      console.error('Error handling image:', error);
       setUploadingImage(false);
     }
   };
@@ -163,11 +172,11 @@ export function ProfileShowcase({
               <input
                 type="text"
                 placeholder="Add qualifications (comma-separated)"
-                value={editedProfile.qualifications.join(', ')}
+                value={editedProfile.qualifications ? editedProfile.qualifications.join(', ') : ''}
                 onChange={(e) =>
                   setEditedProfile({
                     ...editedProfile,
-                    qualifications: e.target.value.split(',').map((q) => q.trim()),
+                    qualifications: e.target.value.split(',').map((q) => q.trim()).filter(q => q !== ''),
                   })
                 }
                 className={`w-full p-2 rounded-lg ${

@@ -24,7 +24,11 @@ export function EarningsTracker({ earnings, darkMode, onRequestPayout }: Earning
       });
     }).reverse();
 
+    // Default to empty array for all days if no earnings data
     const data = labels.map((label) => {
+      // If earnings array is empty, return 0 for this day
+      if (!earnings || earnings.length === 0) return 0;
+      
       const dayEarnings = earnings.filter(
         (e) =>
           new Date(e.created_at).toLocaleDateString('en-US', {
@@ -50,10 +54,14 @@ export function EarningsTracker({ earnings, darkMode, onRequestPayout }: Earning
     };
   };
 
-  const totalEarnings = earnings.reduce((sum, e) => sum + e.amount, 0);
-  const pendingEarnings = earnings
-    .filter((e) => e.status === 'pending')
-    .reduce((sum, e) => sum + e.amount, 0);
+  // Handle empty earnings array
+  const totalEarnings = earnings && earnings.length > 0 
+    ? earnings.reduce((sum, e) => sum + e.amount, 0) 
+    : 0;
+    
+  const pendingEarnings = earnings && earnings.length > 0 
+    ? earnings.filter((e) => e.status === 'pending').reduce((sum, e) => sum + e.amount, 0) 
+    : 0;
 
   return (
     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-sm p-6`}>
@@ -134,37 +142,46 @@ export function EarningsTracker({ earnings, darkMode, onRequestPayout }: Earning
             darkMode ? 'bg-gray-700' : 'bg-gray-50'
           } rounded-lg p-4`}
         >
-          <Line
-            data={getChartData()}
-            options={{
-              responsive: true,
-              plugins: {
-                legend: {
-                  display: false,
-                },
-              },
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  grid: {
-                    color: darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-                  },
-                  ticks: {
-                    callback: (value) => `$${value}`,
-                    color: darkMode ? '#9ca3af' : '#4b5563',
-                  },
-                },
-                x: {
-                  grid: {
+          {/* Show message if no earnings data */}
+          {(!earnings || earnings.length === 0) ? (
+            <div className="h-64 flex items-center justify-center">
+              <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                No earnings data available yet
+              </p>
+            </div>
+          ) : (
+            <Line
+              data={getChartData()}
+              options={{
+                responsive: true,
+                plugins: {
+                  legend: {
                     display: false,
                   },
-                  ticks: {
-                    color: darkMode ? '#9ca3af' : '#4b5563',
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    grid: {
+                      color: darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                    },
+                    ticks: {
+                      callback: (value) => `$${value}`,
+                      color: darkMode ? '#9ca3af' : '#4b5563',
+                    },
+                  },
+                  x: {
+                    grid: {
+                      display: false,
+                    },
+                    ticks: {
+                      color: darkMode ? '#9ca3af' : '#4b5563',
+                    },
                   },
                 },
-              },
-            }}
-          />
+              }}
+            />
+          )}
         </div>
       </div>
     </div>
