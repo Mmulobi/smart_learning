@@ -27,6 +27,11 @@
   .animate-pulse-slow {
     animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
+  
+  /* Slow spin animation for orbit elements */
+  .animate-spin-slow {
+    animation: spin 30s linear infinite;
+  }
 }
 
 /* Keyframes for animations */
@@ -54,6 +59,15 @@
   }
   100% {
     transform: translateY(0px);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
   }
 }
 

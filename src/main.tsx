@@ -7,6 +7,7 @@ import { StudentDashboard } from './components/dashboard/StudentDashboard';
 import { TutorDashboard } from './components/dashboard/TutorDashboard';
 import { StudentAuth } from './components/auth/StudentAuth';
 import { TutorAuth } from './components/auth/TutorAuth';
+import { CombinedAuth } from './components/auth/CombinedAuth';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -16,6 +17,7 @@ const router = createBrowserRouter(
         <Route path="tutor" element={<TutorDashboard />} />
       </Route>
       <Route path="auth">
+        <Route index element={<CombinedAuth />} />
         <Route path="student" element={<StudentAuth />} />
         <Route path="tutor" element={<TutorAuth />} />
       </Route>

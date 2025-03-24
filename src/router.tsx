@@ -5,6 +5,7 @@ import { TutorDashboard } from './components/dashboard/TutorDashboard';
 import { StudentDashboard } from './components/dashboard/StudentDashboard';
 import { TutorAuth } from './components/auth/TutorAuth';
 import { StudentAuth } from './components/auth/StudentAuth';
+import { CombinedAuth } from './components/auth/CombinedAuth';
 
 function ErrorBoundary() {
   return (
@@ -26,6 +27,10 @@ export const router = createBrowserRouter([
       {
         path: '/',
         element: <Home />,
+      },
+      {
+        path: '/auth',
+        element: <CombinedAuth />,
       },
       {
         path: '/auth/tutor',
