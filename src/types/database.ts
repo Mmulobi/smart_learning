@@ -29,6 +29,8 @@ export interface StudentProfile {
   email: string;
   grade_level: string;
   subjects: string[];
+  bio?: string;
+  image_url?: string;
   created_at: string;
   updated_at: string;
 }

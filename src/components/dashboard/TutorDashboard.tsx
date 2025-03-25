@@ -1,156 +1,205 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { DatabaseService } from '../../services/database';
+import { RealtimeService } from '../../services/realtime';
 import type { Session, TutorProfile, Earning, StudentProfile } from '../../types/database';
 import { useNavigate } from 'react-router-dom';
-import { SessionManager } from './tutor/SessionManager';
-import { StudentInsights } from './tutor/StudentInsights';
-import { EarningsTracker } from './tutor/EarningsTracker';
-import { ProfileShowcase } from './tutor/ProfileShowcase';
-import { LogOut } from 'lucide-react';
+import { Sidebar } from './tutor/Sidebar';
+import { Dashboard } from './tutor/Dashboard';
+import { Schedule } from './tutor/Schedule';
+import { Messages } from './tutor/Messages';
+import { Settings } from './tutor/Settings';
+import { Resources } from './tutor/Resources';
 
-export interface StudentInsight {
-  student: StudentProfile;
+// Define the legacy StudentInsightData interface for compatibility
+interface StudentInsightData {
+  student: {
+    id: string;
+    name: string;
+  };
   sessions: Session[];
   strengths: string[];
   weaknesses: string[];
 }
 
 export function TutorDashboard() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [darkMode, setDarkMode] = useState(false);
   const [profile, setProfile] = useState<TutorProfile | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [earnings, setEarnings] = useState<Earning[]>([]);
-  const navigate = useNavigate();
+  const [students, setStudents] = useState<StudentProfile[]>([]);
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   useEffect(() => {
-    loadDashboardData();
-    setupRealtimeSubscriptions();
-  }, []);
-
-  const setupRealtimeSubscriptions = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+    // Check if user is authenticated
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
         navigate('/auth/tutor');
         return;
-      }
-
-      // Subscribe to session updates
-      const sessionSubscription = supabase
-        .channel('sessions')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'sessions',
-            filter: `tutor_id=eq.${user.id}`,
-          },
-          () => {
-            loadDashboardData();
-          }
-        )
-        .subscribe();
-
-      // Subscribe to review updates
-      const reviewSubscription = supabase
-        .channel('reviews')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'reviews',
-            filter: `tutor_id=eq.${user.id}`,
-          },
-          () => {
-            loadDashboardData();
-          }
-        )
-        .subscribe();
-
-      return () => {
-        sessionSubscription.unsubscribe();
-        reviewSubscription.unsubscribe();
-      };
-    } catch (error) {
-      console.error('Error setting up subscriptions:', error);
-      setError('Failed to set up real-time updates');
-    }
-  };
-
-  const loadDashboardData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate('/auth/tutor');
-        return;
-      }
-
-      // Get tutor profile first
-      const tutorProfile = await DatabaseService.getTutorProfile(user.id);
-      if (!tutorProfile) {
-        setError('Tutor profile not found. Please contact support.');
-        return;
-      }
-
-      // Only fetch other data if we have a valid tutor profile
-      try {
-        // Get sessions first
-        const tutorSessions = await DatabaseService.getSessionsByTutor(tutorProfile.id);
-        setSessions(tutorSessions);
-        
-        // Try to get earnings, but handle the case where the table doesn't exist
-        try {
-          const tutorEarnings = await DatabaseService.getEarningsByTutor(tutorProfile.id);
-          setEarnings(tutorEarnings);
-        } catch (earningsError) {
-          console.warn('Earnings table may not exist:', earningsError);
-          // Set empty earnings array if the table doesn't exist
-          setEarnings([]);
-        }
-
-        setProfile(tutorProfile);
-      } catch (dataError) {
-        console.error('Error fetching dashboard data:', dataError);
-        // Still allow dashboard to load even if some data fails
-        setProfile(tutorProfile);
       }
       
-    } catch (error) {
-      console.error('Error loading dashboard:', error);
-      setError(error instanceof Error ? error.message : 'Failed to load dashboard data');
+      // Load tutor profile
+      loadTutorProfile(session.user.id);
+    };
+    
+    checkAuth();
+    
+    return () => {
+      // Cleanup any subscriptions when component unmounts
+      RealtimeService.unsubscribeFromChannel('session-updates');
+    };
+  }, [navigate]);
+  
+  const loadTutorProfile = async (userId: string) => {
+    try {
+      setLoading(true);
+      const tutorProfile = await DatabaseService.getTutorProfile(userId);
+      
+      if (!tutorProfile) {
+        setError('Could not load tutor profile');
+        return;
+      }
+      
+      setProfile(tutorProfile);
+      
+      // Subscribe to real-time session updates
+      subscribeToSessionUpdates(tutorProfile.id);
+      
+      // Load sessions, earnings, and students
+      await Promise.all([
+        loadSessions(tutorProfile.id),
+        loadEarnings(tutorProfile.id)
+      ]);
+    } catch (err: any) {
+      setError(err.message || 'Error loading tutor profile');
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
-
+  
+  const subscribeToSessionUpdates = (tutorId: string) => {
+    RealtimeService.subscribeToSessions(
+      tutorId,
+      'tutor',
+      (updatedSession) => {
+        // Handle the real-time session update
+        setSessions(prevSessions => {
+          // Check if this session already exists in our state
+          const existingIndex = prevSessions.findIndex(s => s.id === updatedSession.id);
+          
+          if (existingIndex >= 0) {
+            // Update the existing session
+            const updatedSessions = [...prevSessions];
+            updatedSessions[existingIndex] = updatedSession;
+            return updatedSessions;
+          } else {
+            // Add the new session
+            return [...prevSessions, updatedSession];
+          }
+        });
+      }
+    );
+  };
+  
+  const loadSessions = async (tutorId: string) => {
+    try {
+      const sessionsData = await DatabaseService.getSessionsByTutor(tutorId);
+      setSessions(sessionsData);
+      
+      // Extract unique students from sessions
+      const uniqueStudents = Array.from(
+        new Set(sessionsData.map(session => session.student_id))
+      ).map(studentId => {
+        const session = sessionsData.find(s => s.student_id === studentId);
+        return session?.student_profiles;
+      }).filter(Boolean) as StudentProfile[];
+      
+      setStudents(uniqueStudents);
+    } catch (err) {
+      console.error('Error loading sessions:', err);
+    }
+  };
+  
+  const loadEarnings = async (tutorId: string) => {
+    try {
+      const earningsData = await DatabaseService.getEarningsByTutor(tutorId);
+      setEarnings(earningsData);
+    } catch (err) {
+      console.error('Error loading earnings:', err);
+    }
+  };
+  
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Error signing out:', error);
+        return;
+      }
+      navigate('/auth/tutor');
+    } catch (err) {
+      console.error('Error signing out:', err);
+    }
+  };
+  
+  const handleMessageStudent = (studentId: string) => {
+    // Navigate to messages tab and select the student
+    setActiveTab('messages');
+    // Additional logic to select the specific student conversation
+    console.log(`Opening messages with student ${studentId}`);
+  };
+  
+  const handleUpdateSession = async (session: Session) => {
+    try {
+      const updatedSession = await DatabaseService.updateSession(session);
+      
+      // Update the sessions state
+      setSessions(prevSessions => {
+        const index = prevSessions.findIndex(s => s.id === updatedSession.id);
+        if (index >= 0) {
+          const updatedSessions = [...prevSessions];
+          updatedSessions[index] = updatedSession;
+          return updatedSessions;
+        }
+        return prevSessions;
+      });
+    } catch (err: any) {
+      setError(err.message || 'Error updating session');
+      console.error(err);
+    }
+  };
+  
+  // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading your dashboard...</p>
+          <div className="w-16 h-16 border-4 border-t-blue-500 border-gray-200 rounded-full animate-spin mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-700">Loading your dashboard...</h2>
         </div>
       </div>
     );
   }
-
-  if (error) {
+  
+  // Error state
+  if (error || !profile) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Oops! Something went wrong</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={() => loadDashboardData()}
-            className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center max-w-md p-6 bg-white rounded-lg shadow">
+          <div className="text-red-500 text-5xl mb-4">⚠️</div>
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">
+            {error || "Could not load your tutor profile"}
+          </h2>
+          <p className="text-gray-500 mb-4">
+            There was an error loading your dashboard. Please try again or contact support.
+          </p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
           >
             Try Again
           </button>
@@ -159,176 +208,129 @@ export function TutorDashboard() {
     );
   }
 
-  if (!profile) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Profile Not Found</h2>
-          <p className="text-gray-600 mb-4">Unable to load your tutor profile. Please contact support.</p>
-          <button
-            onClick={() => navigate('/auth/tutor')}
-            className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
-          >
-            Back to Login
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Group sessions by student for insights
-  const sessionsByStudent = sessions.reduce((acc, session) => {
-    if (!session.student_profiles) return acc;
-    
-    const studentId = session.student_id;
-    if (!acc[studentId]) {
-      acc[studentId] = {
-        student: session.student_profiles,
-        sessions: [],
-        strengths: [],
-        weaknesses: []
-      };
-    }
-    acc[studentId].sessions.push(session);
-
-    // Update strengths and weaknesses based on session data
-    const subjects = acc[studentId].sessions.map(s => s.subject);
-    acc[studentId].strengths = [...new Set(subjects)];
-    acc[studentId].weaknesses = [];
-
-    return acc;
-  }, {} as { [key: string]: StudentInsight });
-
-  const handleUpdateSession = async (updatedSession: Session) => {
-    try {
-      await DatabaseService.updateSession(updatedSession);
-      await loadDashboardData();
-    } catch (error) {
-      console.error('Error updating session:', error);
-      setError('Failed to update session');
-    }
+  // Process the sessions to generate student insights
+  const processSessionsForInsights = () => {
+    // Group sessions by student for insights
+    return sessions.reduce((acc: Record<string, StudentInsightData>, session) => {
+      if (!session.student_profiles) return acc;
+      
+      const studentId = session.student_id;
+      
+      if (!acc[studentId]) {
+        acc[studentId] = {
+          student: {
+            id: studentId,
+            name: session.student_profiles.name || 'Unknown Student'
+          },
+          sessions: [],
+          strengths: [],
+          weaknesses: []
+        };
+      }
+      
+      acc[studentId].sessions.push(session);
+      
+      return acc;
+    }, {});
   };
-
-  const handleUpdateProfile = async (updatedProfile: Partial<TutorProfile>) => {
-    try {
-      if (!profile) return;
-      
-      // Log the update operation for debugging
-      console.log('Updating profile with:', updatedProfile);
-      
-      // Use DatabaseService for consistency
-      await DatabaseService.updateTutorProfile(profile.user_id, updatedProfile);
-      
-      // Show success message
-      setError('Profile updated successfully!');
-      
-      // Reload dashboard data
-      await loadDashboardData();
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      setError(error instanceof Error ? error.message : 'Failed to update profile');
-    }
-  };
-
-  const handleRequestPayout = async () => {
-    if (!profile) return;
-    try {
-      // For now, just mark all pending earnings as paid
-      const { error } = await supabase
-        .from('earnings')
-        .update({ status: 'paid' })
-        .eq('tutor_id', profile.id)
-        .eq('status', 'pending');
-      
-      if (error) throw error;
-      await loadDashboardData();
-    } catch (error) {
-      console.error('Error requesting payout:', error);
-      setError('Failed to request payout');
-    }
-  };
-
-  const handleMessageStudent = async (studentId: string, message: string) => {
-    if (!profile) return;
-    try {
-      const { error } = await supabase
-        .from('messages')
-        .insert([{
-          sender_id: profile.id,
-          receiver_id: studentId,
-          content: message
-        }]);
-      
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error sending message:', error);
-      setError('Failed to send message');
-    }
-  };
-
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      navigate('/auth/tutor');
-    } catch (error) {
-      console.error('Error signing out:', error);
-      setError('Failed to sign out');
-    }
-  };
-
+  
+  const studentInsights = Object.values(processSessionsForInsights());
+  
   return (
-    <div className={darkMode ? 'dark' : ''}>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Welcome back, {profile.name}
-            </h1>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setDarkMode(!darkMode)}
-                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
-              >
-                {darkMode ? '🌞' : '🌙'}
-              </button>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar */}
+      <Sidebar 
+        activeTab={activeTab} 
+        onTabChange={setActiveTab} 
+        tutorName={profile.name}
+      />
+      
+      {/* Main content */}
+      <div className="flex-1 lg:pl-64">
+        {/* Top header */}
+        <header className="sticky top-0 z-10 flex-shrink-0 flex h-16 bg-white shadow">
+          <div className="flex-1 px-4 flex justify-between lg:px-8">
+            <div className="flex-1 flex items-center">
+              <h1 className="text-2xl font-semibold text-gray-900">
+                {activeTab === 'dashboard' && 'Dashboard'}
+                {activeTab === 'schedule' && 'Schedule'}
+                {activeTab === 'messages' && 'Messages'}
+                {activeTab === 'resources' && 'Resources'}
+                {activeTab === 'settings' && 'Settings'}
+              </h1>
+            </div>
+            <div className="ml-4 flex items-center lg:ml-6">
               <button
                 onClick={handleSignOut}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200"
+                className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
-                <LogOut className="h-4 w-4" />
                 Sign Out
               </button>
             </div>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <ProfileShowcase
-              profile={profile}
-              onUpdateProfile={handleUpdateProfile}
-              darkMode={darkMode}
-            />
+        </header>
+        
+        {/* Main content area */}
+        <main className="flex-1 pb-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+            {error && (
+              <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg relative">
+                {error}
+                <button 
+                  className="absolute top-0 bottom-0 right-0 px-4 py-3"
+                  onClick={() => setError(null)}
+                >
+                  <span className="sr-only">Dismiss</span>
+                  <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            )}
             
-            <SessionManager
-              sessions={sessions}
-              darkMode={darkMode}
-              onUpdateSession={handleUpdateSession}
-            />
-
-            <div className="space-y-8">
-              <StudentInsights
-                insights={Object.values(sessionsByStudent)}
-                darkMode={darkMode}
+            {activeTab === 'dashboard' && (
+              <Dashboard 
+                profile={profile} 
+                sessions={sessions} 
+                earnings={earnings} 
+                insights={studentInsights}
                 onMessageStudent={handleMessageStudent}
+                onUpdateSession={handleUpdateSession}
               />
-              
-              <EarningsTracker
-                earnings={earnings}
-                onRequestPayout={handleRequestPayout}
-                darkMode={darkMode}
+            )}
+            
+            {activeTab === 'schedule' && (
+              <Schedule 
+                profile={profile} 
+                sessions={sessions} 
+                onUpdateAvailability={(availability) => {
+                  DatabaseService.updateTutorProfile(profile.user_id, { availability })
+                    .then(updatedProfile => setProfile(updatedProfile))
+                    .catch(err => setError(err.message));
+                }} 
               />
-            </div>
+            )}
+            
+            {activeTab === 'messages' && (
+              <Messages profile={profile} />
+            )}
+            
+            {activeTab === 'resources' && (
+              <Resources profile={profile} />
+            )}
+            
+            {activeTab === 'settings' && (
+              <Settings 
+                profile={profile}
+                onUpdateProfile={(updates) => {
+                  DatabaseService.updateTutorProfile(profile.user_id, updates)
+                    .then(updatedProfile => setProfile(updatedProfile))
+                    .catch(err => setError(err.message));
+                }}
+              />
+            )}
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );

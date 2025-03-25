@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import { NavBar } from './components/NavBar';
-import { Hero } from './components/Hero';
+import { Home } from './components/Home';
 
 function App() {
   const [session, setSession] = useState<any>(null);
@@ -60,7 +60,7 @@ function App() {
     <div className="min-h-screen bg-gray-50">
       <NavBar />
       <main>
-        {location.pathname === '/' ? <Hero /> : <Outlet />}
+        {location.pathname === '/' ? <Home /> : <Outlet />}
       </main>
     </div>
   );

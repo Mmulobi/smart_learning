@@ -196,4 +196,94 @@ export class DatabaseService {
     if (error) throw error;
     return data;
   }
+
+  // New methods for session management
+  static async getSessionById(sessionId: string): Promise<Session | null> {
+    const { data, error } = await supabase
+      .from('sessions')
+      .select(`
+        *,
+        student_profiles (
+          id,
+          name,
+          email
+        ),
+        tutor_profiles (
+          id,
+          name,
+          email
+        )
+      `)
+      .eq('id', sessionId)
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async updateSessionStatus(sessionId: string, status: Session['status']): Promise<Session> {
+    const { data, error } = await supabase
+      .from('sessions')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', sessionId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async getUpcomingSessions(userId: string, role: 'student' | 'tutor'): Promise<Session[]> {
+    const now = new Date().toISOString();
+    const field = role === 'student' ? 'student_id' : 'tutor_id';
+    
+    const { data, error } = await supabase
+      .from('sessions')
+      .select(`
+        *,
+        student_profiles (
+          id,
+          name,
+          email
+        ),
+        tutor_profiles (
+          id,
+          name,
+          email
+        )
+      `)
+      .eq(field, userId)
+      .gte('start_time', now)
+      .order('start_time', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  static async getPastSessions(userId: string, role: 'student' | 'tutor'): Promise<Session[]> {
+    const now = new Date().toISOString();
+    const field = role === 'student' ? 'student_id' : 'tutor_id';
+    
+    const { data, error } = await supabase
+      .from('sessions')
+      .select(`
+        *,
+        student_profiles (
+          id,
+          name,
+          email
+        ),
+        tutor_profiles (
+          id,
+          name,
+          email
+        )
+      `)
+      .eq(field, userId)
+      .lt('end_time', now)
+      .order('start_time', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
 }

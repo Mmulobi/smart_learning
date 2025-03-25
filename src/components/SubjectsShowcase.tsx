@@ -12,6 +12,7 @@ interface Subject {
 export function SubjectsShowcase() {
   const [activeSubject, setActiveSubject] = useState<number | null>(null);
   const [autoplay, setAutoplay] = useState(true);
+  const [orbitRotation, setOrbitRotation] = useState(0);
 
   const subjects: Subject[] = [
     {
@@ -78,6 +79,15 @@ export function SubjectsShowcase() {
     return () => clearInterval(interval);
   }, [autoplay, subjects.length]);
 
+  // Orbit rotation animation
+  useEffect(() => {
+    const orbitInterval = setInterval(() => {
+      setOrbitRotation(prev => (prev + 0.5) % 360);
+    }, 50);
+    
+    return () => clearInterval(orbitInterval);
+  }, []);
+
   // Pause autoplay when user interacts
   const handleSubjectClick = (index: number) => {
     setActiveSubject(index);
@@ -99,58 +109,79 @@ export function SubjectsShowcase() {
         </div>
 
         {/* 3D Rotating Subject Wheel */}
-        <div className="relative h-[500px] mb-16">
+        <div className="relative h-[600px] mb-16 perspective-1000">
           {/* Central spotlight */}
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-gradient-to-r from-indigo-500/20 to-purple-500/20 blur-xl"></div>
           
-          {/* Subject Orbit */}
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full border-2 border-dashed border-gray-200 animate-spin-slow"></div>
-          
-          {/* Subjects */}
-          {subjects.map((subject, index) => {
-            // Calculate position on the circle
-            const angle = (index / subjects.length) * 2 * Math.PI;
-            const radius = 200; // Circle radius
-            const x = Math.cos(angle) * radius;
-            const y = Math.sin(angle) * radius;
+          {/* 3D Orbit Container */}
+          <div 
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] preserve-3d"
+            style={{ transform: `rotateY(${orbitRotation}deg)` }}
+          >
+            {/* Subject Orbit */}
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[450px] h-[450px] rounded-full border-2 border-dashed border-gray-200 preserve-3d"></div>
             
-            const isActive = activeSubject === index;
-            
-            return (
-              <motion.div
-                key={subject.name}
-                className="absolute top-1/2 left-1/2 cursor-pointer"
-                initial={{ x, y, scale: 1 }}
-                animate={{ 
-                  x: isActive ? 0 : x, 
-                  y: isActive ? 0 : y,
-                  scale: isActive ? 1.5 : 1,
-                  zIndex: isActive ? 10 : 1
-                }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                onClick={() => handleSubjectClick(index)}
-              >
-                <div className={`flex items-center justify-center w-16 h-16 rounded-full ${subject.color} text-white shadow-lg transform transition-all duration-300 hover:scale-110`}>
-                  {subject.icon}
-                </div>
-                {isActive && (
-                  <motion.div
-                    className="absolute top-full left-1/2 transform -translate-x-1/2 mt-4 bg-white rounded-xl shadow-xl p-4 w-64"
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
+            {/* Subjects */}
+            {subjects.map((subject, index) => {
+              // Calculate position on the 3D orbit
+              const angle = (index / subjects.length) * 2 * Math.PI;
+              const radius = 225; // Orbit radius
+              const x = Math.cos(angle) * radius;
+              const z = Math.sin(angle) * radius;
+              
+              const isActive = activeSubject === index;
+              
+              return (
+                <motion.div
+                  key={subject.name}
+                  className="absolute top-1/2 left-1/2 cursor-pointer preserve-3d"
+                  style={{ 
+                    transform: `translate(-50%, -50%) translate3d(${x}px, 0, ${z}px)`,
+                    zIndex: z < 0 ? 0 : 10
+                  }}
+                  whileHover={{ scale: 1.1 }}
+                  onClick={() => handleSubjectClick(index)}
+                >
+                  <div 
+                    className={`flex items-center justify-center w-16 h-16 rounded-full ${subject.color} text-white shadow-lg transform transition-all duration-300`}
+                    style={{ 
+                      transform: `rotateY(${-orbitRotation}deg)`,
+                      opacity: z < 0 ? 0.6 : 1,
+                      scale: z < 0 ? 0.8 : 1
+                    }}
                   >
-                    <h3 className="font-bold text-lg text-gray-900">{subject.name}</h3>
-                    <p className="text-gray-600 text-sm mt-1">{subject.description}</p>
-                  </motion.div>
-                )}
-              </motion.div>
-            );
-          })}
-          
-          {/* Center piece */}
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-24 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-xl">
-            <span className="font-bold">Subjects</span>
+                    {subject.icon}
+                  </div>
+                  {isActive && (
+                    <motion.div
+                      className="absolute top-full left-1/2 transform -translate-x-1/2 mt-4 bg-white rounded-xl shadow-xl p-4 w-64 z-50"
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 }}
+                      style={{ transform: `translateX(-50%) rotateY(${-orbitRotation}deg)` }}
+                    >
+                      <h3 className="font-bold text-lg text-gray-900">{subject.name}</h3>
+                      <p className="text-gray-600 text-sm mt-1">{subject.description}</p>
+                      <motion.button
+                        className="mt-3 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm rounded-lg"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        Explore
+                      </motion.button>
+                    </motion.div>
+                  )}
+                </motion.div>
+              );
+            })}
+            
+            {/* Center piece */}
+            <div 
+              className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-24 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-xl z-20"
+              style={{ transform: `translate(-50%, -50%) rotateY(${-orbitRotation}deg)` }}
+            >
+              <span className="font-bold">Subjects</span>
+            </div>
           </div>
         </div>
         
@@ -201,12 +232,12 @@ export function SubjectsShowcase() {
                     initial={{ width: 0 }}
                     animate={{ width: "85%" }}
                     transition={{ duration: 1.5, ease: "easeOut" }}
-                  ></motion.div>
+                  />
                 </div>
-                <span className="ml-2 text-sm font-medium text-gray-700">85%</span>
+                <span className="ml-2 text-sm text-gray-600">85%</span>
               </div>
             </div>
-            <div className="h-2 bg-gradient-to-r from-purple-500 to-indigo-500"></div>
+            <div className="h-2 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
           </div>
         </div>
       </div>
