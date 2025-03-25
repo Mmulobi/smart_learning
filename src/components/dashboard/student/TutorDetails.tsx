@@ -4,10 +4,11 @@ import { Calendar } from 'lucide-react';
 
 interface TutorDetailsProps {
   tutor: TutorProfile;
-  onBookSession: (tutorId: string, session: Partial<Session>) => Promise<Session>;
+  onBookSession?: (tutorId: string, session: Partial<Session>) => Promise<Session>;
+  onScheduleSession?: () => void;
 }
 
-export function TutorDetails({ tutor, onBookSession }: TutorDetailsProps) {
+export function TutorDetails({ tutor, onBookSession, onScheduleSession }: TutorDetailsProps) {
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [loading, setLoading] = useState(false);
@@ -26,15 +27,20 @@ export function TutorDetails({ tutor, onBookSession }: TutorDetailsProps) {
       setError(null);
       const startTime = new Date(`${selectedDate}T${selectedTime}`).toISOString();
 
-      await onBookSession(tutor.id, {
-        start_time: startTime,
-        duration: 60, // 1 hour
-        subject: tutor.subjects[0] || '',
-        status: 'pending',
-        notes: '',
-        rating: 0,
-        feedback: '',
-      });
+      if (onBookSession) {
+        await onBookSession(tutor.id, {
+          start_time: startTime,
+          duration: 60, // 1 hour
+          subject: tutor.subjects[0] || '',
+          status: 'pending',
+          notes: '',
+          rating: 0,
+          feedback: '',
+        });
+      } else if (onScheduleSession) {
+        // If onScheduleSession is provided, use that instead
+        onScheduleSession();
+      }
 
       setSelectedDate('');
       setSelectedTime('');
@@ -172,8 +178,8 @@ export function TutorDetails({ tutor, onBookSession }: TutorDetailsProps) {
 
             {/* CTA Button */}
             <button
-              onClick={() => setActiveTab('booking')}
-              className="w-full py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+              onClick={() => onScheduleSession ? onScheduleSession() : setActiveTab('booking')}
+              className="w-full py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-md hover:shadow-lg transition-all duration-150"
             >
               Book a Session
             </button>

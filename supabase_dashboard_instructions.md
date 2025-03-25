@@ -54,7 +54,9 @@ ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
 
 ALTER TABLE student_profiles
 ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now(),
-ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
+ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now(),
+ADD COLUMN IF NOT EXISTS bio text,
+ADD COLUMN IF NOT EXISTS image_url text;
 ```
 
 ## 4. Fix Row-Level Security (RLS) Policies
@@ -115,6 +117,23 @@ The error "new row violates row-level security policy for table sessions" occurs
    - Check the "SELECT" operation
    - Click "Save Policy"
 
+### Create policies for the student_profiles table:
+
+1. Find the "student_profiles" table in the list
+2. **Delete any existing policies** that might be conflicting
+3. Click "New Policy"
+4. Create a policy for students to manage their own profiles:
+
+   - Policy name: `Allow users to manage their own student profiles`
+   - Policy definition: Select "Create custom policy"
+   - Using expression: 
+     ```sql
+     auth.uid() = user_id
+     ```
+   - Target roles: Leave blank (applies to all authenticated users)
+   - Check all operations: "SELECT", "INSERT", "UPDATE", and "DELETE"
+   - Click "Save Policy"
+
 ### Create policies for the earnings table:
 
 1. Click "New Policy" for the earnings table
@@ -132,7 +151,36 @@ The error "new row violates row-level security policy for table sessions" occurs
    - Check the "SELECT" operation
    - Click "Save Policy"
 
-## 5. Enable Realtime for Tables
+## 5. Create Storage Bucket for Profile Images
+
+The application needs a storage bucket to store profile images:
+
+1. In the left sidebar, click on "Storage"
+2. Click "Create bucket"
+3. Enter the following details:
+   - Name: `profiles` (this exact name is required)
+   - Access: Choose "Public" to allow images to be publicly accessible
+   - Enable RLS: Yes (to control access through policies)
+4. Click "Create bucket"
+
+### Set up Storage Bucket Policies
+
+1. After creating the bucket, click on the "profiles" bucket
+2. Go to the "Policies" tab
+3. Click "Create policy"
+4. Create a policy for users to manage their own profile images:
+   - Policy name: `Allow users to manage their own profile images`
+   - Policy definition: Select "Create custom policy"
+   - Using expression: 
+     ```sql
+     (auth.uid() = (SELECT user_id FROM student_profiles WHERE id::text = (storage.foldername)[1])) OR
+     (auth.uid() = (SELECT user_id FROM tutor_profiles WHERE id::text = (storage.foldername)[1]))
+     ```
+   - Target roles: Leave blank (applies to all authenticated users)
+   - Check all operations: "SELECT", "INSERT", "UPDATE", and "DELETE"
+   - Click "Save Policy"
+
+## 6. Enable Realtime for Tables
 
 To ensure realtime updates work properly:
 
@@ -146,7 +194,7 @@ To ensure realtime updates work properly:
 4. If not enabled, select the tables and click "Enable realtime"
 5. Click "Save" to apply the changes
 
-## 6. Create Database Triggers for Realtime Updates
+## 7. Create Database Triggers for Realtime Updates
 
 To ensure timestamps are updated correctly:
 
@@ -188,14 +236,15 @@ FOR EACH ROW
 EXECUTE FUNCTION update_timestamp();
 ```
 
-## 7. Verify the Changes
+## 8. Verify the Changes
 
 1. In the left sidebar, click on "Table Editor"
 2. Check each table to confirm the new columns are added
 3. Check that the `earnings` table has been created
 4. Verify that RLS policies are properly set up by going to "Authentication" > "Policies"
+5. Verify that the storage bucket "profiles" has been created and has the correct policies
 
-## 8. Test the Application
+## 9. Test the Application
 
 After making these changes, test your application to ensure:
 

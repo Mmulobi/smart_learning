@@ -33,6 +33,9 @@ function App() {
       const isAuthRoute = location.pathname.startsWith('/auth/');
       const isDashboardRoute = location.pathname.includes('/dashboard');
 
+      console.log('Current path:', location.pathname);
+      console.log('Auth state:', { session, userRole, isAuthRoute, isDashboardRoute });
+
       if (session) {
         // If logged in and trying to access auth routes, redirect to dashboard
         if (isAuthRoute) {
@@ -60,7 +63,16 @@ function App() {
     <div className="min-h-screen bg-gray-50">
       <NavBar />
       <main>
-        {location.pathname === '/' ? <Home /> : <Outlet />}
+        {location.pathname === '/' ? (
+          <>
+            <div className="p-4 bg-blue-100 text-blue-800 text-center">
+              Debug: Home component is being rendered
+            </div>
+            <Home />
+          </>
+        ) : (
+          <Outlet />
+        )}
       </main>
     </div>
   );

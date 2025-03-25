@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { TutorProfile } from '../../../types/database';
-import { Settings as SettingsIcon, User, Mail, Phone, BookOpen, DollarSign, Clock, Bell, Lock, Save } from 'lucide-react';
+import { Settings as SettingsIcon, User, Mail, Phone, DollarSign, Bell, Lock, Save } from 'lucide-react';
+import { ProfileEditor } from './ProfileEditor';
 
 interface SettingsProps {
   profile: TutorProfile;
@@ -54,205 +55,232 @@ export function Settings({ profile, onUpdateProfile }: SettingsProps) {
     console.log('Updated profile:', formData);
   };
 
-  const renderProfileSettings = () => (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
-        <div className="md:grid md:grid-cols-3 md:gap-6">
-          <div className="md:col-span-1">
-            <h3 className="text-lg font-medium leading-6 text-gray-900">Personal Information</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Update your personal details and public profile.
-            </p>
-          </div>
-          <div className="mt-5 md:mt-0 md:col-span-2">
-            <div className="grid grid-cols-6 gap-6">
-              <div className="col-span-6 sm:col-span-4">
-                <label htmlFor="full_name" className="block text-sm font-medium text-gray-700">
-                  Full Name
-                </label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    name="full_name"
-                    id="full_name"
-                    value={formData.full_name}
-                    onChange={handleInputChange}
-                    className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
-                  />
-                </div>
-              </div>
-
-              <div className="col-span-6 sm:col-span-4">
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                  Email Address
-                </label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <input
-                    type="email"
-                    name="email"
-                    id="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
-                  />
-                </div>
-              </div>
-
-              <div className="col-span-6 sm:col-span-4">
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                  Phone Number
-                </label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Phone className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <input
-                    type="tel"
-                    name="phone"
-                    id="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
-                  />
-                </div>
-              </div>
-
-              <div className="col-span-6">
-                <label htmlFor="bio" className="block text-sm font-medium text-gray-700">
-                  Bio
-                </label>
-                <div className="mt-1">
-                  <textarea
-                    id="bio"
-                    name="bio"
-                    rows={4}
-                    value={formData.bio}
-                    onChange={handleInputChange}
-                    className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                    placeholder="Tell students about yourself, your teaching experience, and your approach to tutoring..."
-                  />
-                </div>
-                <p className="mt-2 text-sm text-gray-500">
-                  Brief description for your profile. URLs are hyperlinked.
-                </p>
-              </div>
-
-              <div className="col-span-6">
-                <label className="block text-sm font-medium text-gray-700">
-                  Profile Visibility
-                </label>
-                <div className="mt-2 space-y-2">
-                  <div className="flex items-center">
-                    <input
-                      id="visibility-public"
-                      name="profile_visibility"
-                      type="radio"
-                      value="public"
-                      checked={formData.profile_visibility === 'public'}
-                      onChange={handleInputChange}
-                      className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
-                    />
-                    <label htmlFor="visibility-public" className="ml-3 block text-sm font-medium text-gray-700">
-                      Public (Visible to all students)
-                    </label>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      id="visibility-limited"
-                      name="profile_visibility"
-                      type="radio"
-                      value="limited"
-                      checked={formData.profile_visibility === 'limited'}
-                      onChange={handleInputChange}
-                      className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
-                    />
-                    <label htmlFor="visibility-limited" className="ml-3 block text-sm font-medium text-gray-700">
-                      Limited (Only visible to your students)
-                    </label>
-                  </div>
-                </div>
-              </div>
+  const renderProfileSettings = () => {
+    const [showProfileEditor, setShowProfileEditor] = useState(false);
+    
+    if (showProfileEditor) {
+      return (
+        <ProfileEditor 
+          profile={profile} 
+          onUpdate={(updatedProfile) => {
+            if (onUpdateProfile) {
+              onUpdateProfile(updatedProfile);
+            }
+            setShowProfileEditor(false);
+          }}
+          onCancel={() => setShowProfileEditor(false)}
+        />
+      );
+    }
+    
+    return (
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
+          <div className="md:grid md:grid-cols-3 md:gap-6">
+            <div className="md:col-span-1">
+              <h3 className="text-lg font-medium leading-6 text-gray-900">Personal Information</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Update your personal details and public profile.
+              </p>
             </div>
-          </div>
-        </div>
-      </div>
+            <div className="mt-5 md:mt-0 md:col-span-2">
+              <div className="grid grid-cols-6 gap-6">
+                <div className="col-span-6 sm:col-span-4">
+                  <label htmlFor="full_name" className="block text-sm font-medium text-gray-700">
+                    Full Name
+                  </label>
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <User className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      name="full_name"
+                      id="full_name"
+                      value={formData.full_name}
+                      onChange={handleInputChange}
+                      className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
+                    />
+                  </div>
+                </div>
 
-      <div className="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
-        <div className="md:grid md:grid-cols-3 md:gap-6">
-          <div className="md:col-span-1">
-            <h3 className="text-lg font-medium leading-6 text-gray-900">Professional Information</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Update your teaching subjects and rates.
-            </p>
-          </div>
-          <div className="mt-5 md:mt-0 md:col-span-2">
-            <div className="grid grid-cols-6 gap-6">
-              <div className="col-span-6">
-                <label className="block text-sm font-medium text-gray-700">
-                  Subjects You Teach
-                </label>
-                <div className="mt-2 space-y-2">
-                  {['Mathematics', 'Physics', 'Chemistry', 'Biology', 'Computer Science', 'English', 'History'].map((subject) => (
-                    <div key={subject} className="flex items-center">
+                <div className="col-span-6 sm:col-span-4">
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                    Email Address
+                  </label>
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Mail className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                      type="email"
+                      name="email"
+                      id="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
+                    />
+                  </div>
+                </div>
+
+                <div className="col-span-6 sm:col-span-4">
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                    Phone Number
+                  </label>
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Phone className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                      type="tel"
+                      name="phone"
+                      id="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
+                    />
+                  </div>
+                </div>
+
+                <div className="col-span-6">
+                  <label htmlFor="bio" className="block text-sm font-medium text-gray-700">
+                    Bio
+                  </label>
+                  <div className="mt-1">
+                    <textarea
+                      id="bio"
+                      name="bio"
+                      rows={4}
+                      value={formData.bio}
+                      onChange={handleInputChange}
+                      className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                      placeholder="Tell students about yourself, your teaching experience, and your approach to tutoring..."
+                    />
+                  </div>
+                  <p className="mt-2 text-sm text-gray-500">
+                    Brief description for your profile. URLs are hyperlinked.
+                  </p>
+                </div>
+
+                <div className="col-span-6">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Profile Visibility
+                  </label>
+                  <div className="mt-2 space-y-2">
+                    <div className="flex items-center">
                       <input
-                        id={`subject-${subject}`}
-                        name={`subject-${subject}`}
-                        type="checkbox"
-                        value={subject}
-                        checked={formData.subjects.includes(subject)}
-                        onChange={handleSubjectChange}
-                        className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                        id="visibility-public"
+                        name="profile_visibility"
+                        type="radio"
+                        value="public"
+                        checked={formData.profile_visibility === 'public'}
+                        onChange={handleInputChange}
+                        className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
                       />
-                      <label htmlFor={`subject-${subject}`} className="ml-3 block text-sm font-medium text-gray-700">
-                        {subject}
+                      <label htmlFor="visibility-public" className="ml-3 block text-sm font-medium text-gray-700">
+                        Public (Visible to all students)
                       </label>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="col-span-6 sm:col-span-3">
-                <label htmlFor="hourly_rate" className="block text-sm font-medium text-gray-700">
-                  Hourly Rate ($)
-                </label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <DollarSign className="h-4 w-4 text-gray-400" />
+                    <div className="flex items-center">
+                      <input
+                        id="visibility-limited"
+                        name="profile_visibility"
+                        type="radio"
+                        value="limited"
+                        checked={formData.profile_visibility === 'limited'}
+                        onChange={handleInputChange}
+                        className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
+                      />
+                      <label htmlFor="visibility-limited" className="ml-3 block text-sm font-medium text-gray-700">
+                        Limited (Only visible to your students)
+                      </label>
+                    </div>
                   </div>
-                  <input
-                    type="number"
-                    name="hourly_rate"
-                    id="hourly_rate"
-                    min="0"
-                    step="0.01"
-                    value={formData.hourly_rate}
-                    onChange={handleInputChange}
-                    className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
-                  />
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
-          <Save className="h-4 w-4 mr-2" />
-          Save Changes
-        </button>
-      </div>
-    </form>
-  );
+        <div className="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
+          <div className="md:grid md:grid-cols-3 md:gap-6">
+            <div className="md:col-span-1">
+              <h3 className="text-lg font-medium leading-6 text-gray-900">Professional Information</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Update your teaching subjects and rates.
+              </p>
+            </div>
+            <div className="mt-5 md:mt-0 md:col-span-2">
+              <div className="grid grid-cols-6 gap-6">
+                <div className="col-span-6">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Subjects You Teach
+                  </label>
+                  <div className="mt-2 space-y-2">
+                    {['Mathematics', 'Physics', 'Chemistry', 'Biology', 'Computer Science', 'English', 'History'].map((subject) => (
+                      <div key={subject} className="flex items-center">
+                        <input
+                          id={`subject-${subject}`}
+                          name={`subject-${subject}`}
+                          type="checkbox"
+                          value={subject}
+                          checked={formData.subjects.includes(subject)}
+                          onChange={handleSubjectChange}
+                          className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                        />
+                        <label htmlFor={`subject-${subject}`} className="ml-3 block text-sm font-medium text-gray-700">
+                          {subject}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="col-span-6 sm:col-span-3">
+                  <label htmlFor="hourly_rate" className="block text-sm font-medium text-gray-700">
+                    Hourly Rate ($)
+                  </label>
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <DollarSign className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                      type="number"
+                      name="hourly_rate"
+                      id="hourly_rate"
+                      min="0"
+                      step="0.01"
+                      value={formData.hourly_rate}
+                      onChange={handleInputChange}
+                      className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end space-x-3">
+          <button
+            type="button"
+            onClick={() => setShowProfileEditor(true)}
+            className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            <User className="h-4 w-4 mr-2" />
+            Edit Full Profile
+          </button>
+          <button
+            type="submit"
+            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            Save Changes
+          </button>
+        </div>
+      </form>
+    );
+  };
 
   const renderNotificationSettings = () => (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -281,8 +309,8 @@ export function Settings({ profile, onUpdateProfile }: SettingsProps) {
                       />
                     </div>
                     <div className="ml-3 text-sm">
-                      <label htmlFor="notification_email" className="font-medium text-gray-700">New session requests</label>
-                      <p className="text-gray-500">Get notified when a student requests a session with you.</p>
+                      <label htmlFor="notification_email" className="font-medium text-gray-700">Session Reminders</label>
+                      <p className="text-gray-500">Get notified about upcoming sessions.</p>
                     </div>
                   </div>
                 </div>
@@ -302,8 +330,8 @@ export function Settings({ profile, onUpdateProfile }: SettingsProps) {
                       />
                     </div>
                     <div className="ml-3 text-sm">
-                      <label htmlFor="notification_sms" className="font-medium text-gray-700">Session reminders</label>
-                      <p className="text-gray-500">Get SMS reminders before your scheduled sessions.</p>
+                      <label htmlFor="notification_sms" className="font-medium text-gray-700">Session Alerts</label>
+                      <p className="text-gray-500">Receive text messages for session confirmations and changes.</p>
                     </div>
                   </div>
                 </div>
@@ -323,8 +351,8 @@ export function Settings({ profile, onUpdateProfile }: SettingsProps) {
                       />
                     </div>
                     <div className="ml-3 text-sm">
-                      <label htmlFor="notification_app" className="font-medium text-gray-700">App notifications</label>
-                      <p className="text-gray-500">Receive push notifications for messages and updates.</p>
+                      <label htmlFor="notification_app" className="font-medium text-gray-700">App Notifications</label>
+                      <p className="text-gray-500">Receive in-app notifications for all activity.</p>
                     </div>
                   </div>
                 </div>
@@ -333,7 +361,6 @@ export function Settings({ profile, onUpdateProfile }: SettingsProps) {
           </div>
         </div>
       </div>
-
       <div className="flex justify-end">
         <button
           type="submit"
@@ -376,7 +403,6 @@ export function Settings({ profile, onUpdateProfile }: SettingsProps) {
                   />
                 </div>
               </div>
-
               <div>
                 <label htmlFor="new_password" className="block text-sm font-medium text-gray-700">
                   New Password
@@ -395,7 +421,6 @@ export function Settings({ profile, onUpdateProfile }: SettingsProps) {
                   />
                 </div>
               </div>
-
               <div>
                 <label htmlFor="confirm_password" className="block text-sm font-medium text-gray-700">
                   Confirm New Password
@@ -418,7 +443,6 @@ export function Settings({ profile, onUpdateProfile }: SettingsProps) {
           </div>
         </div>
       </div>
-
       <div className="flex justify-end">
         <button
           type="submit"
@@ -432,53 +456,45 @@ export function Settings({ profile, onUpdateProfile }: SettingsProps) {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
-        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4">
-          <h2 className="text-lg font-semibold text-white flex items-center">
-            <SettingsIcon className="h-5 w-5 mr-2" />
-            Settings
-          </h2>
-        </div>
-        
-        <div className="border-b border-gray-200">
-          <nav className="flex -mb-px">
-            <button
-              onClick={() => setActiveTab('profile')}
-              className={`w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm ${
-                activeTab === 'profile'
-                  ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <User className="h-5 w-5 mx-auto mb-1" />
-              Profile
-            </button>
-            <button
-              onClick={() => setActiveTab('notifications')}
-              className={`w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm ${
-                activeTab === 'notifications'
-                  ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <Bell className="h-5 w-5 mx-auto mb-1" />
-              Notifications
-            </button>
-            <button
-              onClick={() => setActiveTab('security')}
-              className={`w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm ${
-                activeTab === 'security'
-                  ? 'border-indigo-500 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <Lock className="h-5 w-5 mx-auto mb-1" />
-              Security
-            </button>
-          </nav>
-        </div>
-        
+    <div className="flex flex-col h-full">
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+          <button
+            onClick={() => setActiveTab('profile')}
+            className={`${
+              activeTab === 'profile'
+                ? 'border-indigo-500 text-indigo-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+          >
+            <User className="h-5 w-5 mr-2 inline" />
+            Profile
+          </button>
+          <button
+            onClick={() => setActiveTab('notifications')}
+            className={`${
+              activeTab === 'notifications'
+                ? 'border-indigo-500 text-indigo-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+          >
+            <Bell className="h-5 w-5 mr-2 inline" />
+            Notifications
+          </button>
+          <button
+            onClick={() => setActiveTab('security')}
+            className={`${
+              activeTab === 'security'
+                ? 'border-indigo-500 text-indigo-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+          >
+            <Lock className="h-5 w-5 mr-2 inline" />
+            Security
+          </button>
+        </nav>
+      </div>
+      <div className="flex-1 overflow-y-auto">
         <div className="p-6">
           {activeTab === 'profile' && renderProfileSettings()}
           {activeTab === 'notifications' && renderNotificationSettings()}
