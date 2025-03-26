@@ -12,16 +12,29 @@ interface UpcomingSessionsCardProps {
 
 export function UpcomingSessionsCard({ sessions, tutorName = 'Tutor' }: UpcomingSessionsCardProps) {
   const [activeSession, setActiveSession] = useState<Session | null>(null);
+  const [isLoading, setIsLoading] = useState<{[key: string]: boolean}>({});
   
   const handleJoinSession = async (session: Session) => {
+    console.log('Starting classroom session for:', session);
+    
+    // Set loading state for this specific session
+    setIsLoading(prev => ({ ...prev, [session.id]: true }));
+    
     try {
       // Update the session status to active in the database
-      await DatabaseService.setSessionActive(session.id, true);
+      console.log('Setting session active in database...');
+      const updatedSession = await DatabaseService.setSessionActive(session.id, true);
+      console.log('Session updated successfully:', updatedSession);
       
       // Set the active session locally
+      console.log('Setting active session locally...');
       setActiveSession(session);
     } catch (error) {
       console.error('Error starting session:', error);
+      alert('Failed to start the classroom session. Please try again.');
+    } finally {
+      // Clear loading state
+      setIsLoading(prev => ({ ...prev, [session.id]: false }));
     }
   };
   
@@ -53,7 +66,8 @@ export function UpcomingSessionsCard({ sessions, tutorName = 'Tutor' }: Upcoming
             {sessions.map((session) => (
               <div 
                 key={session.id} 
-                className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow relative"
+                style={{ pointerEvents: 'auto' }}
               >
                 <div className="flex justify-between items-start">
                   <div>
@@ -83,15 +97,33 @@ export function UpcomingSessionsCard({ sessions, tutorName = 'Tutor' }: Upcoming
                 </div>
                 
                 <div className="mt-3 flex justify-end space-x-2">
-                  <button 
-                    onClick={() => handleJoinSession(session)}
-                    className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-100"
+                  {/* Separate the button from the card for better click handling */}
+                  <div 
+                    className="inline-block" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
                   >
-                    Start Classroom Session
-                  </button>
-                  <button className="text-xs bg-gray-50 text-gray-700 px-2 py-1 rounded hover:bg-gray-100">
-                    Reschedule
-                  </button>
+                    <button 
+                      onClick={() => {
+                        console.log('Button clicked for session:', session.id);
+                        handleJoinSession(session);
+                      }}
+                      disabled={isLoading[session.id]}
+                      className={`text-xs ${isLoading[session.id] ? 'bg-indigo-400' : 'bg-indigo-600 hover:bg-indigo-700'} text-white px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors cursor-pointer font-medium`}
+                      type="button"
+                    >
+                      {isLoading[session.id] ? 'Starting...' : 'Start Classroom Session'}
+                    </button>
+                  </div>
+                  <div className="inline-block" onClick={(e) => e.stopPropagation()}>
+                    <button 
+                      className="text-xs bg-gray-200 text-gray-700 px-3 py-2 rounded hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors cursor-pointer"
+                      type="button"
+                    >
+                      Reschedule
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
