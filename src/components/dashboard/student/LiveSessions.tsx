@@ -45,12 +45,14 @@ export function LiveSessions({ sessions, onScheduleSession }: LiveSessionsProps)
       </div>
       
       {activeSession ? (
-        <VideoCall
-          sessionId={activeSession.id}
-          roomName={`smart-learning-session-${activeSession.id}`}
-          displayName="Student"
-          onClose={endSession}
-        />
+        <div className="fixed inset-0 z-50">
+          <VideoCall
+            sessionId={activeSession.id}
+            roomName={`smart-learning-session-${activeSession.id}`}
+            displayName="Student"
+            onClose={endSession}
+          />
+        </div>
       ) : (
         <div className="p-6">
           <div className="mb-6">

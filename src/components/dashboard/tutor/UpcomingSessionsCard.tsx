@@ -108,12 +108,14 @@ export function UpcomingSessionsCard({ sessions, tutorName = 'Tutor' }: Upcoming
       
       {/* Video Call Modal */}
       {activeSession && (
-        <VideoCall
-          sessionId={activeSession.id}
-          roomName={`smart-learning-session-${activeSession.id}`}
-          displayName={tutorName}
-          onClose={handleCloseSession}
-        />
+        <div className="fixed inset-0 z-50">
+          <VideoCall
+            sessionId={activeSession.id}
+            roomName={`smart-learning-session-${activeSession.id}`}
+            displayName={tutorName}
+            onClose={handleCloseSession}
+          />
+        </div>
       )}
     </div>
   );

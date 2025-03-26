@@ -285,12 +285,14 @@ export function Sidebar({ activeTab, onChangeTab, onSignOut, onEditProfile, onFi
       
       {/* Video Call Modal */}
       {showVideoCall && (
-        <VideoCall
-          sessionId="direct-session"
-          roomName="smart-learning-direct-session"
-          displayName="Student"
-          onClose={handleCloseVideoCall}
-        />
+        <div className="fixed inset-0 z-50">
+          <VideoCall
+            sessionId="direct-session"
+            roomName="smart-learning-direct-session"
+            displayName="Student"
+            onClose={handleCloseVideoCall}
+          />
+        </div>
       )}
     </>
   );
