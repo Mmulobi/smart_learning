@@ -251,11 +251,10 @@ export class DatabaseService {
         throw new Error(`Session with ID ${sessionId} not found`);
       }
       
-      // Then update the session
+      // Then update the session - only update status and updated_at, not is_active
       const { data, error } = await supabase
         .from('sessions')
         .update({ 
-          is_active: isActive, 
           updated_at: new Date().toISOString(),
           status: isActive ? 'in-progress' : 'scheduled'
         })
