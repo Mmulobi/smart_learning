@@ -35,7 +35,10 @@ export function Dashboard({ profile, sessions }: DashboardProps) {
     <div className="space-y-6">
       {/* Top row - Upcoming Lessons and Enrolled Courses */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <UpcomingLessons sessions={upcomingSessions} />
+        <UpcomingLessons 
+          sessions={upcomingSessions} 
+          studentName={profile.name} 
+        />
         <EnrolledCourses subjects={profile.subjects} />
       </div>
       
