@@ -234,19 +234,45 @@ export class DatabaseService {
   }
   
   static async setSessionActive(sessionId: string, isActive: boolean): Promise<Session> {
-    const { data, error } = await supabase
-      .from('sessions')
-      .update({ 
-        is_active: isActive, 
-        updated_at: new Date().toISOString(),
-        status: isActive ? 'in-progress' : 'scheduled'
-      })
-      .eq('id', sessionId)
-      .select()
-      .single();
+    try {
+      // First, check if the session exists
+      const { data: existingSession, error: fetchError } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('id', sessionId)
+        .single();
+      
+      if (fetchError) {
+        console.error('Error fetching session:', fetchError);
+        throw fetchError;
+      }
+      
+      if (!existingSession) {
+        throw new Error(`Session with ID ${sessionId} not found`);
+      }
+      
+      // Then update the session
+      const { data, error } = await supabase
+        .from('sessions')
+        .update({ 
+          is_active: isActive, 
+          updated_at: new Date().toISOString(),
+          status: isActive ? 'in-progress' : 'scheduled'
+        })
+        .eq('id', sessionId)
+        .select()
+        .single();
 
-    if (error) throw error;
-    return data;
+      if (error) {
+        console.error('Error updating session:', error);
+        throw error;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error in setSessionActive:', error);
+      throw error;
+    }
   }
 
   static async getUpcomingSessions(userId: string, role: 'student' | 'tutor'): Promise<Session[]> {

@@ -3,6 +3,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import { NavBar } from './components/NavBar';
 import { Home } from './components/Home';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   const [session, setSession] = useState<any>(null);
@@ -74,6 +75,22 @@ function App() {
           <Outlet />
         )}
       </main>
+      <Toaster position="top-right" toastOptions={{
+        success: {
+          duration: 3000,
+          style: {
+            background: '#10B981',
+            color: 'white',
+          },
+        },
+        error: {
+          duration: 4000,
+          style: {
+            background: '#EF4444',
+            color: 'white',
+          },
+        },
+      }} />
     </div>
   );
 }
