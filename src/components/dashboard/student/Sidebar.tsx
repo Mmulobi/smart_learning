@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { VideoCall } from '../../VideoCall';
 import { 
   LayoutDashboard, 
   Video, 
@@ -27,6 +28,7 @@ interface SidebarProps {
 export function Sidebar({ activeTab, onChangeTab, onSignOut, onEditProfile, onFindTutor, onStartLesson }: SidebarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [showVideoCall, setShowVideoCall] = useState(false);
   
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -43,6 +45,14 @@ export function Sidebar({ activeTab, onChangeTab, onSignOut, onEditProfile, onFi
   const handleTabClick = (tabId: string) => {
     onChangeTab(tabId);
     setMobileMenuOpen(false);
+  };
+  
+  const handleStartClassroomSession = () => {
+    setShowVideoCall(true);
+  };
+  
+  const handleCloseVideoCall = () => {
+    setShowVideoCall(false);
   };
   
   return (
@@ -215,13 +225,13 @@ export function Sidebar({ activeTab, onChangeTab, onSignOut, onEditProfile, onFi
                     <span className="text-xs font-medium">Find Tutor</span>
                   </button>
                   <button
-                    onClick={onStartLesson}
+                    onClick={handleStartClassroomSession}
                     className="flex flex-col items-center justify-center bg-purple-700 hover:bg-purple-600 text-white rounded-lg p-3 transition-all duration-150 shadow-sm hover:shadow group"
                   >
                     <div className="p-2 rounded-full bg-purple-600 group-hover:bg-purple-500 transition-colors duration-150 mb-2">
                       <Play className="h-5 w-5" />
                     </div>
-                    <span className="text-xs font-medium">Start Lesson</span>
+                    <span className="text-xs font-medium">Start Classroom Session</span>
                   </button>
                 </div>
               </div>
@@ -272,6 +282,16 @@ export function Sidebar({ activeTab, onChangeTab, onSignOut, onEditProfile, onFi
           </div>
         </div>
       </div>
+      
+      {/* Video Call Modal */}
+      {showVideoCall && (
+        <VideoCall
+          sessionId="direct-session"
+          roomName="smart-learning-direct-session"
+          displayName="Student"
+          onClose={handleCloseVideoCall}
+        />
+      )}
     </>
   );
 }

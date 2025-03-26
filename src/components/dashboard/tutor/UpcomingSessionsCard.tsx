@@ -1,12 +1,24 @@
+import { useState } from 'react';
 import { Session } from '../../../types/database';
 import { format } from 'date-fns';
 import { Calendar, Clock, User, BookOpen } from 'lucide-react';
+import { VideoCall } from '../../VideoCall';
 
 interface UpcomingSessionsCardProps {
   sessions: Session[];
+  tutorName?: string;
 }
 
-export function UpcomingSessionsCard({ sessions }: UpcomingSessionsCardProps) {
+export function UpcomingSessionsCard({ sessions, tutorName = 'Tutor' }: UpcomingSessionsCardProps) {
+  const [activeSession, setActiveSession] = useState<Session | null>(null);
+  
+  const handleJoinSession = (session: Session) => {
+    setActiveSession(session);
+  };
+  
+  const handleCloseSession = () => {
+    setActiveSession(null);
+  };
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
       <div className="bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-4">
@@ -52,8 +64,11 @@ export function UpcomingSessionsCard({ sessions }: UpcomingSessionsCardProps) {
                 </div>
                 
                 <div className="mt-3 flex justify-end space-x-2">
-                  <button className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-100">
-                    Join Session
+                  <button 
+                    onClick={() => handleJoinSession(session)}
+                    className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-100"
+                  >
+                    Start Classroom Session
                   </button>
                   <button className="text-xs bg-gray-50 text-gray-700 px-2 py-1 rounded hover:bg-gray-100">
                     Reschedule
@@ -71,6 +86,16 @@ export function UpcomingSessionsCard({ sessions }: UpcomingSessionsCardProps) {
           </div>
         )}
       </div>
+      
+      {/* Video Call Modal */}
+      {activeSession && (
+        <VideoCall
+          sessionId={activeSession.id}
+          roomName={`smart-learning-session-${activeSession.id}`}
+          displayName={tutorName}
+          onClose={handleCloseSession}
+        />
+      )}
     </div>
   );
 }

@@ -21,10 +21,9 @@ interface DashboardProps {
   earnings: Earning[];
   insights: StudentInsightData[];
   onMessageStudent: (studentId: string) => void;
-  onUpdateSession: (session: Session) => Promise<void>;
 }
 
-export function Dashboard({ profile, sessions, earnings, insights, onMessageStudent, onUpdateSession }: DashboardProps) {
+export function Dashboard({ profile, sessions, earnings, insights, onMessageStudent }: DashboardProps) {
   // Get upcoming sessions (scheduled sessions in the future)
   const now = new Date();
   const upcomingSessions = sessions
@@ -142,6 +141,7 @@ export function Dashboard({ profile, sessions, earnings, insights, onMessageStud
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <UpcomingSessionsCard 
           sessions={upcomingSessions}
+          tutorName={profile.name}
         />
         <PerformanceMetrics 
           completedSessions={completedSessions}

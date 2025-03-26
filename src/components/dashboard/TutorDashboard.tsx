@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { DatabaseService } from '../../services/database';
 import { RealtimeService } from '../../services/realtime';
-import type { Session, TutorProfile, Earning, StudentProfile } from '../../types/database';
+import type { Session, TutorProfile, Earning } from '../../types/database';
 import { useNavigate } from 'react-router-dom';
 import { Sidebar } from './tutor/Sidebar';
 import { Dashboard } from './tutor/Dashboard';
@@ -29,7 +29,7 @@ export function TutorDashboard() {
   const [profile, setProfile] = useState<TutorProfile | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [earnings, setEarnings] = useState<Earning[]>([]);
-  const [students, setStudents] = useState<StudentProfile[]>([]);
+  // Removed unused students state
   const [activeTab, setActiveTab] = useState('dashboard');
 
   useEffect(() => {
@@ -110,15 +110,7 @@ export function TutorDashboard() {
       const sessionsData = await DatabaseService.getSessionsByTutor(tutorId);
       setSessions(sessionsData);
       
-      // Extract unique students from sessions
-      const uniqueStudents = Array.from(
-        new Set(sessionsData.map(session => session.student_id))
-      ).map(studentId => {
-        const session = sessionsData.find(s => s.student_id === studentId);
-        return session?.student_profiles;
-      }).filter(Boolean) as StudentProfile[];
-      
-      setStudents(uniqueStudents);
+      // Student profiles are now extracted from insights in the Dashboard component
     } catch (err) {
       console.error('Error loading sessions:', err);
     }
@@ -153,25 +145,7 @@ export function TutorDashboard() {
     console.log(`Opening messages with student ${studentId}`);
   };
   
-  const handleUpdateSession = async (session: Session) => {
-    try {
-      const updatedSession = await DatabaseService.updateSession(session);
-      
-      // Update the sessions state
-      setSessions(prevSessions => {
-        const index = prevSessions.findIndex(s => s.id === updatedSession.id);
-        if (index >= 0) {
-          const updatedSessions = [...prevSessions];
-          updatedSessions[index] = updatedSession;
-          return updatedSessions;
-        }
-        return prevSessions;
-      });
-    } catch (err: any) {
-      setError(err.message || 'Error updating session');
-      console.error(err);
-    }
-  };
+  // Session updates are now handled directly in the components that need them
   
   // Loading state
   if (loading) {
@@ -295,7 +269,6 @@ export function TutorDashboard() {
                 earnings={earnings} 
                 insights={studentInsights}
                 onMessageStudent={handleMessageStudent}
-                onUpdateSession={handleUpdateSession}
               />
             )}
             
