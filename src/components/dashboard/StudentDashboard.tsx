@@ -263,6 +263,8 @@ export function StudentDashboard() {
         onEditProfile={() => setShowProfileEditor(true)}
         onFindTutor={handleFindTutor}
         onStartLesson={handleStartLesson}
+        sessions={sessions}
+        studentName={profile?.name}
       />
       
       {/* Main content */}
