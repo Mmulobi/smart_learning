@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { DatabaseService } from '../../services/database';
 import { RealtimeService } from '../../services/realtime';
 import type { StudentProfile, TutorProfile, Session } from '../../types/database';
-import { LogOut, User, Bell, Search, X } from 'lucide-react';
+import { User, Bell, Search, X } from 'lucide-react';
 import { Sidebar } from './student/Sidebar';
 import { Dashboard } from './student/Dashboard';
 import { LiveSessions } from './student/LiveSessions';
@@ -24,19 +24,17 @@ export function StudentDashboard() {
   const [showProfileEditor, setShowProfileEditor] = useState(false);
   const [showFindTutor, setShowFindTutor] = useState(false);
   const [selectedTutor, setSelectedTutor] = useState<TutorProfile | null>(null);
-  const [notifications, setNotifications] = useState<{id: string, message: string, read: boolean}[]>([]);
+  const [notifications, setNotifications] = useState<{id: string, message: string, read: boolean, sessionId?: string, type?: string}[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     loadData();
     
-    // Mock notifications for UI demonstration
-    setNotifications([
-      { id: '1', message: 'Your math session is starting in 30 minutes', read: false },
-      { id: '2', message: 'New learning resources available for Physics', read: false },
-      { id: '3', message: 'Tutor John Smith accepted your session request', read: true }
-    ]);
+    // Request notification permission when the app loads
+    if ('Notification' in window && Notification.permission !== 'denied') {
+      Notification.requestPermission();
+    }
     
     return () => {
       // Cleanup any subscriptions when component unmounts
@@ -101,6 +99,33 @@ export function StudentDashboard() {
         setSessions(prevSessions => {
           // Check if this session already exists in our state
           const existingIndex = prevSessions.findIndex(s => s.id === updatedSession.id);
+          
+          // Check if this is a session being activated by a tutor
+          const existingSession = existingIndex >= 0 ? prevSessions[existingIndex] : null;
+          if (existingSession && !existingSession.is_active && updatedSession.is_active) {
+            // This session was just activated - create a notification
+            const tutorName = updatedSession.tutor_profiles?.name || 'Your tutor';
+            const subject = updatedSession.subject || 'your session';
+            
+            // Add a notification
+            const newNotification = {
+              id: `session-${updatedSession.id}-${Date.now()}`,
+              message: `${tutorName} has started ${subject} session. Join now!`,
+              read: false,
+              sessionId: updatedSession.id,
+              type: 'session-start'
+            };
+            
+            setNotifications(prev => [newNotification, ...prev]);
+            
+            // Show a browser notification if supported
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification('Session Started', {
+                body: `${tutorName} has started your ${subject} session. Join now!`,
+                icon: '/favicon.ico'
+              });
+            }
+          }
           
           if (existingIndex >= 0) {
             // Update the existing session
@@ -173,6 +198,23 @@ export function StudentDashboard() {
     setNotifications(prev => 
       prev.map(notif => notif.id === id ? {...notif, read: true} : notif)
     );
+  };
+  
+  const handleNotificationClick = (notification: {id: string, message: string, read: boolean, sessionId?: string, type?: string}) => {
+    // Mark the notification as read
+    handleReadNotification(notification.id);
+    
+    // If this is a session notification, navigate to the sessions tab
+    if (notification.type === 'session-start' && notification.sessionId) {
+      setActiveTab('sessions');
+      setShowNotifications(false);
+      
+      // Find the session and activate it
+      const session = sessions.find(s => s.id === notification.sessionId);
+      if (session) {
+        // The LiveSessions component will handle showing the active session
+      }
+    }
   };
   
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -269,8 +311,8 @@ export function StudentDashboard() {
                           notifications.map(notification => (
                             <div 
                               key={notification.id} 
-                              className={`px-4 py-3 border-b border-gray-100 last:border-0 ${!notification.read ? 'bg-indigo-50' : ''}`}
-                              onClick={() => handleReadNotification(notification.id)}
+                              className={`px-4 py-3 border-b border-gray-100 last:border-0 ${!notification.read ? 'bg-indigo-50' : ''} ${notification.type === 'session-start' ? 'cursor-pointer hover:bg-indigo-100' : ''}`}
+                              onClick={() => handleNotificationClick(notification)}
                             >
                               <p className="text-sm text-gray-800">{notification.message}</p>
                               <p className="text-xs text-gray-500 mt-1">Just now</p>

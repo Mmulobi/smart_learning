@@ -3,6 +3,7 @@ import { Session } from '../../../types/database';
 import { format } from 'date-fns';
 import { Calendar, Clock, User, BookOpen } from 'lucide-react';
 import { VideoCall } from '../../VideoCall';
+import { DatabaseService } from '../../../services/database';
 
 interface UpcomingSessionsCardProps {
   sessions: Session[];
@@ -12,11 +13,29 @@ interface UpcomingSessionsCardProps {
 export function UpcomingSessionsCard({ sessions, tutorName = 'Tutor' }: UpcomingSessionsCardProps) {
   const [activeSession, setActiveSession] = useState<Session | null>(null);
   
-  const handleJoinSession = (session: Session) => {
-    setActiveSession(session);
+  const handleJoinSession = async (session: Session) => {
+    try {
+      // Update the session status to active in the database
+      await DatabaseService.setSessionActive(session.id, true);
+      
+      // Set the active session locally
+      setActiveSession(session);
+    } catch (error) {
+      console.error('Error starting session:', error);
+    }
   };
   
-  const handleCloseSession = () => {
+  const handleCloseSession = async () => {
+    if (activeSession) {
+      try {
+        // Update the session status to inactive in the database
+        await DatabaseService.setSessionActive(activeSession.id, false);
+      } catch (error) {
+        console.error('Error ending session:', error);
+      }
+    }
+    
+    // Clear the active session locally
     setActiveSession(null);
   };
   return (

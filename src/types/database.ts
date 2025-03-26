@@ -43,13 +43,15 @@ export interface Session {
   start_time: string;
   end_time: string;
   duration?: number; // Duration in minutes
-  status: 'scheduled' | 'completed' | 'cancelled' | 'pending';
+  status: 'scheduled' | 'completed' | 'cancelled' | 'pending' | 'in-progress';
   notes: string;
   rating?: number;
   feedback?: string;
+  is_active?: boolean; // Indicates if a session is currently active
   created_at: string;
   updated_at: string;
   student_profiles?: StudentProfile;
+  tutor_profiles?: TutorProfile;
 }
 
 export interface Review {

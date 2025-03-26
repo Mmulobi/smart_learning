@@ -232,6 +232,22 @@ export class DatabaseService {
     if (error) throw error;
     return data;
   }
+  
+  static async setSessionActive(sessionId: string, isActive: boolean): Promise<Session> {
+    const { data, error } = await supabase
+      .from('sessions')
+      .update({ 
+        is_active: isActive, 
+        updated_at: new Date().toISOString(),
+        status: isActive ? 'in-progress' : 'scheduled'
+      })
+      .eq('id', sessionId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
 
   static async getUpcomingSessions(userId: string, role: 'student' | 'tutor'): Promise<Session[]> {
     const now = new Date().toISOString();
