@@ -65,12 +65,7 @@ function App() {
       <NavBar />
       <main>
         {location.pathname === '/' ? (
-          <>
-            <div className="p-4 bg-blue-100 text-blue-800 text-center">
-              Debug: Home component is being rendered
-            </div>
-            <Home />
-          </>
+          <Home />
         ) : (
           <Outlet />
         )}
@@ -94,5 +89,4 @@ function App() {
     </div>
   );
 }
-
 export default App;
