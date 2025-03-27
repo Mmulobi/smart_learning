@@ -27,12 +27,18 @@ export default defineConfig({
       'Cross-Origin-Opener-Policy': 'same-origin',
       'Content-Security-Policy': `
         default-src 'self';
-        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.zoom.us https://*.vercel.app;
-        style-src 'self' 'unsafe-inline' https://*.zoom.us https://*.vercel.app;
-        img-src 'self' data: https://*.zoom.us https://*.vercel.app;
-        connect-src 'self' https://*.zoom.us https://api.zoom.us https://*.vercel.app;
-        frame-src 'self' https://*.zoom.us https://*.vercel.app;
-      `.replace(/\s+/g, ' ').trim()
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.zoom.us https://api.zoom.us;
+        style-src 'self' 'unsafe-inline' https://*.zoom.us;
+        img-src 'self' data: https://*.zoom.us https://api.zoom.us;
+        connect-src 'self' 
+          https://*.zoom.us 
+          https://api.zoom.us 
+          https://*.vercel.app 
+          https://*.supabase.co 
+          https://vjuspsmhcvldpkgusllb.supabase.co 
+          wss://*.supabase.co;
+        frame-src 'self' https://*.zoom.us https://*.jit.si;
+      `.replace(/\s+/g, ' ').trim(),
     },
     port: 5174,
   },

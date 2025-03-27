@@ -37,21 +37,27 @@ export interface StudentProfile {
 
 export interface Session {
   id: string;
-  tutor_id: string;
   student_id: string;
+  tutor_id: string;
   subject: string;
   start_time: string;
   end_time: string;
-  duration?: number; // Duration in minutes
+  duration: number;
   status: 'scheduled' | 'completed' | 'cancelled' | 'pending' | 'in-progress';
   notes: string;
   rating?: number;
   feedback?: string;
-  is_active?: boolean; // Indicates if a session is currently active
+  is_active?: boolean;
   created_at: string;
   updated_at: string;
   student_profiles?: StudentProfile;
   tutor_profiles?: TutorProfile;
+  room_id?: string;
+  tutor_token?: string;
+  student_token?: string;
+  webrtc_offer?: string;
+  webrtc_answer?: string;
+  webrtc_candidates?: string[];
 }
 
 export interface Review {

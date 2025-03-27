@@ -10,6 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@100mslive/hms-video-store": "^0.12.33",
+    "@100mslive/react-sdk": "^0.10.33",
+    "@100mslive/react-ui": "^0.8.9",
     "@jitsi/react-sdk": "^1.4.4",
     "@react-three/drei": "^9.88.17",
     "@react-three/fiber": "^8.15.11",

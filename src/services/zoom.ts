@@ -1,8 +1,8 @@
 import { supabase } from '../lib/supabase';
 
 // Update these with your actual Zoom Marketplace App credentials
-const ZOOM_CLIENT_ID = 'l2VpfUw7RIyxss6YUH86Vg';
-const ZOOM_CLIENT_SECRET = 'l2VpfUw7RIyxss6YUH86Vg';
+const ZOOM_CLIENT_ID = 'rqEK9FnGRVmj1uwG2a9nlw';
+const ZOOM_CLIENT_SECRET = 'CTpzLGnH1JDTpPvLjGPXMQPA0M6wFp4M';
 
 // Use environment variable for redirect URI, fallback to window.location.origin
 const ZOOM_REDIRECT_URI = import.meta.env.VITE_ZOOM_REDIRECT_URI || `${window.location.origin}/zoom/callback`;

@@ -29,13 +29,13 @@ interface DashboardProps {
   sessions: Session[];
   earnings: Earning[];
   insights: {
-    student: {
-      id: string;
-      name: string;
-    };
-    sessions: Session[];
-    strengths: string[];
-    weaknesses: string[];
+  student: {
+    id: string;
+    name: string;
+  };
+  sessions: Session[];
+  strengths: string[];
+  weaknesses: string[];
   }[];
   onMessageStudent: (studentId: string) => void;
 }
@@ -199,9 +199,9 @@ export const TutorDashboard: React.FC = () => {
 
               if (fetchError) {
                 console.error('Error fetching updated session:', fetchError);
-                return;
-              }
-
+        return;
+      }
+      
               if (updatedSession) {
                 console.log('Updated session:', updatedSession); // Debug log
                 setSessions(prev => {
@@ -224,11 +224,11 @@ export const TutorDashboard: React.FC = () => {
       } catch (err) {
         console.error('Error loading profile:', err);
         setError(err instanceof Error ? err.message : 'Failed to load profile');
-      } finally {
-        setLoading(false);
-      }
-    };
-
+    } finally {
+      setLoading(false);
+    }
+  };
+  
     loadProfile();
   }, []);
 
@@ -248,13 +248,13 @@ export const TutorDashboard: React.FC = () => {
       toast.error('Failed to update schedule');
     }
   };
-
+  
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
       window.location.href = '/';
     } catch (error) {
-      console.error('Error signing out:', error);
+        console.error('Error signing out:', error);
       toast.error('Failed to sign out');
     }
   };
@@ -277,7 +277,7 @@ export const TutorDashboard: React.FC = () => {
       </div>
     );
   }
-
+  
   if (!profile) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -288,7 +288,7 @@ export const TutorDashboard: React.FC = () => {
       </div>
     );
   }
-
+  
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
@@ -341,8 +341,8 @@ export const TutorDashboard: React.FC = () => {
           >
             <LogOut className="w-5 h-5" />
             <span>Logout</span>
-          </button>
-        </div>
+              </button>
+            </div>
       </motion.div>
 
       {/* Main Content */}
@@ -352,26 +352,26 @@ export const TutorDashboard: React.FC = () => {
             <h1 className="text-3xl font-bold text-gray-900">
               {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
             </h1>
-            <button
+                <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
-            >
+                >
               <Menu className="w-6 h-6" />
-            </button>
-          </div>
-
-          {activeTab === 'dashboard' && (
-            <Dashboard 
-              profile={profile} 
-              sessions={sessions}
+                </button>
+              </div>
+            
+            {activeTab === 'dashboard' && (
+              <Dashboard 
+                profile={profile} 
+                sessions={sessions} 
               insights={insights}
-              onMessageStudent={handleMessageStudent}
-            />
-          )}
-          {activeTab === 'schedule' && (
-            <Schedule 
-              profile={profile} 
-              sessions={sessions}
+                onMessageStudent={handleMessageStudent}
+              />
+            )}
+            {activeTab === 'schedule' && (
+              <Schedule 
+                profile={profile} 
+                sessions={sessions} 
               onUpdateAvailability={handleUpdateAvailability}
             />
           )}
@@ -380,7 +380,7 @@ export const TutorDashboard: React.FC = () => {
           {activeTab === 'students' && <Students profile={profile} />}
           {activeTab === 'earnings' && <Earnings profile={profile} earnings={earnings} />}
           {activeTab === 'settings' && <SettingsPage profile={profile} />}
-        </div>
+          </div>
       </div>
     </div>
   );
