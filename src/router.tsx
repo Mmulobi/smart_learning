@@ -6,6 +6,8 @@ import { StudentDashboard } from './components/dashboard/StudentDashboard';
 import { CombinedAuth } from './components/auth/CombinedAuth';
 import { TutorList } from './components/tutors/TutorList';
 import { TutorProfile } from './components/tutors/TutorProfile';
+import { SessionDetails } from './components/dashboard/tutor/SessionDetails';
+import { ZoomCallback } from './components/zoom/ZoomCallback';
 
 function ErrorBoundary() {
   return (
@@ -55,6 +57,14 @@ export const router = createBrowserRouter([
       {
         path: 'tutors/:tutorId',
         element: <TutorProfile />,
+      },
+      {
+        path: 'tutor/sessions/:sessionId',
+        element: <SessionDetails />,
+      },
+      {
+        path: 'zoom/callback',
+        element: <ZoomCallback />,
       },
     ],
   },

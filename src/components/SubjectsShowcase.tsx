@@ -120,7 +120,7 @@ export function SubjectsShowcase() {
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
         >
           {subjects.map((subject, index) => (
-            <motion.div
+                <motion.div
               key={index}
               variants={itemVariants}
               className="group relative bg-white/10 backdrop-blur-sm rounded-2xl overflow-hidden hover:bg-white/20 transition-all duration-300"

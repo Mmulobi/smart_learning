@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
     exclude: ['lucide-react'],
-    
+    include: ['react-router-dom'],
   },
   resolve: {
     alias: {
@@ -15,6 +15,7 @@ export default defineConfig({
     },
   },
   define: {
+    'process.env': {},
     'process.env.REACT_ROUTER_FUTURE_FLAGS': JSON.stringify({
       v7_startTransition: true,
       v7_relativeSplatPath: true
@@ -24,6 +25,18 @@ export default defineConfig({
     headers: {
       'Cross-Origin-Embedder-Policy': 'require-corp',
       'Cross-Origin-Opener-Policy': 'same-origin',
+      'Content-Security-Policy': `
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.zoom.us;
+        style-src 'self' 'unsafe-inline' https://*.zoom.us;
+        img-src 'self' data: https://*.zoom.us;
+        connect-src 'self' https://*.zoom.us https://api.zoom.us;
+        frame-src 'self' https://*.zoom.us;
+      `.replace(/\s+/g, ' ').trim()
     },
+    port: 5174,
   },
+  build: {
+    sourcemap: true,
+  }
 });

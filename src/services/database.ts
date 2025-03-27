@@ -393,4 +393,136 @@ export class DatabaseService {
     if (error) throw error;
     return data;
   }
+
+  static async getTutorEarnings(tutorId: string): Promise<number> {
+    try {
+      const { data, error } = await supabase
+        .from('sessions')
+        .select('session_amount')
+        .eq('tutor_id', tutorId)
+        .eq('status', 'completed');
+
+      if (error) throw error;
+      if (!data) return 0;
+
+      return data.reduce((total, session) => total + (session.session_amount || 0), 0);
+    } catch (error) {
+      console.error('Error getting tutor earnings:', error);
+      throw error;
+    }
+  }
+
+  static async getTutorEarningsHistory(tutorId: string, timeRange: string): Promise<any[]> {
+    try {
+      const now = new Date();
+      let startDate = new Date();
+
+      switch (timeRange) {
+        case 'week':
+          startDate.setDate(now.getDate() - 7);
+          break;
+        case 'month':
+          startDate.setDate(now.getDate() - 30);
+          break;
+        case 'quarter':
+          startDate.setDate(now.getDate() - 90);
+          break;
+        case 'year':
+          startDate.setFullYear(now.getFullYear() - 1);
+          break;
+      }
+
+      const { data, error } = await supabase
+        .from('sessions')
+        .select(`
+          id,
+          session_amount,
+          duration,
+          created_at,
+          student_profiles (
+            name
+          ),
+          subject
+        `)
+        .eq('tutor_id', tutorId)
+        .eq('status', 'completed')
+        .gte('created_at', startDate.toISOString())
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      if (!data) return [];
+
+      return data.map(session => ({
+        id: session.id,
+        date: session.created_at,
+        amount: session.session_amount,
+        duration: session.duration,
+        session_title: `${session.subject} Session`,
+        student_name: session.student_profiles?.[0]?.name || 'Unknown Student'
+      }));
+    } catch (error) {
+      console.error('Error getting tutor earnings history:', error);
+      throw error;
+    }
+  }
+
+  static async exportEarningsToCSV(tutorId: string): Promise<string> {
+    try {
+      const earnings = await this.getTutorEarningsHistory(tutorId, 'year');
+      
+      // Create CSV header
+      let csv = 'Date,Session,Student,Duration,Amount\n';
+      
+      // Add data rows
+      earnings.forEach(earning => {
+        csv += `${new Date(earning.date).toLocaleDateString()},${earning.session_title},${earning.student_name},${earning.duration} min,$${earning.amount.toFixed(2)}\n`;
+      });
+      
+      return csv;
+    } catch (error) {
+      console.error('Error exporting earnings to CSV:', error);
+      throw error;
+    }
+  }
+
+  static async getTutorStudents(tutorId: string): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from('sessions')
+        .select(`
+          student_id,
+          student_profiles (
+            id,
+            name,
+            email,
+            subjects,
+            rating
+          )
+        `)
+        .eq('tutor_id', tutorId)
+        .eq('status', 'completed');
+
+      if (error) throw error;
+      if (!data) return [];
+
+      // Get unique students and count their sessions
+      const uniqueStudents = new Map();
+      data.forEach(session => {
+        const student = session.student_profiles?.[0];
+        if (student && !uniqueStudents.has(student.id)) {
+          uniqueStudents.set(student.id, {
+            ...student,
+            session_count: 1
+          });
+        } else if (student) {
+          uniqueStudents.get(student.id).session_count++;
+        }
+      });
+
+      return Array.from(uniqueStudents.values());
+    } catch (error) {
+      console.error('Error getting tutor students:', error);
+      throw error;
+    }
+  }
 }
