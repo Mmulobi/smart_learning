@@ -74,21 +74,35 @@ export class ZoomService {
   }
 
   static async getAuthUrl() {
-    const state = Math.random().toString(36).substring(7);
-    const scope = 'meeting:write user:read';
-    
-    const authUrl = new URL('https://zoom.us/oauth/authorize');
-    authUrl.searchParams.append('response_type', 'code');
-    authUrl.searchParams.append('client_id', ZOOM_CLIENT_ID);
-    authUrl.searchParams.append('redirect_uri', ZOOM_REDIRECT_URI);
-    authUrl.searchParams.append('state', state);
-    authUrl.searchParams.append('scope', scope);
+    try {
+      const state = Math.random().toString(36).substring(7);
+      const scope = 'meeting:write user:read';
+      
+      // Store state in localStorage for verification
+      localStorage.setItem('zoom_auth_state', state);
+      
+      const authUrl = new URL('https://zoom.us/oauth/authorize');
+      authUrl.searchParams.append('response_type', 'code');
+      authUrl.searchParams.append('client_id', ZOOM_CLIENT_ID);
+      authUrl.searchParams.append('redirect_uri', ZOOM_REDIRECT_URI);
+      authUrl.searchParams.append('state', state);
+      authUrl.searchParams.append('scope', scope);
 
-    return authUrl.toString();
+      return authUrl.toString();
+    } catch (error) {
+      console.error('Error generating auth URL:', error);
+      throw error;
+    }
   }
 
   static async handleCallback(code: string, state: string) {
     try {
+      // Verify state
+      const savedState = localStorage.getItem('zoom_auth_state');
+      if (state !== savedState) {
+        throw new Error('Invalid state parameter');
+      }
+
       // Exchange code for access token
       const tokenResponse = await fetch('https://zoom.us/oauth/token', {
         method: 'POST',
@@ -110,6 +124,10 @@ export class ZoomService {
       }
 
       const tokenData = await tokenResponse.json();
+      
+      // Clear state from localStorage
+      localStorage.removeItem('zoom_auth_state');
+      
       return tokenData;
     } catch (error) {
       console.error('Error handling Zoom callback:', error);

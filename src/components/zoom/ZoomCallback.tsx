@@ -29,6 +29,7 @@ export const ZoomCallback: React.FC = () => {
         // Get current user
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         if (userError) throw userError;
+        if (!user) throw new Error('User not found');
 
         // Update tutor profile with Zoom access token
         const { error: updateError } = await supabase

@@ -113,7 +113,7 @@ export const SessionDetails: React.FC = () => {
       if (tutorError || !tutorData?.zoom_access_token) {
         // Redirect to Zoom authorization
         const authUrl = await ZoomService.getAuthUrl();
-        // Use window.location.replace instead of href to avoid CSP issues
+        // Use window.location.replace to avoid CSP issues
         window.location.replace(authUrl);
         return;
       }
@@ -135,11 +135,8 @@ export const SessionDetails: React.FC = () => {
 
       toast.success('Lesson started successfully');
       
-      // Open Zoom meeting in new tab using window.open
-      const zoomWindow = window.open(meetingData.join_url, '_blank');
-      if (!zoomWindow) {
-        toast.error('Please allow popups to join the Zoom meeting');
-      }
+      // Open Zoom meeting in new tab
+      window.open(meetingData.join_url, '_blank', 'noopener,noreferrer');
     } catch (err) {
       console.error('Error starting lesson:', err);
       toast.error('Failed to start lesson. Please try again.');
