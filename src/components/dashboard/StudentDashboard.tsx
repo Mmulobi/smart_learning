@@ -14,6 +14,7 @@ import { TutorFinder } from './student/TutorList';
 import { TutorDetails } from './student/TutorDetails';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast, { Toaster } from 'react-hot-toast';
+import { Resources } from './student/Resources';
 
 export function StudentDashboard() {
   // Core state
@@ -549,6 +550,10 @@ export function StudentDashboard() {
               sessions={sessions} 
               onScheduleSession={() => setShowScheduler(true)} 
             />
+          )}
+
+          {activeTab === 'resources' && profile && (
+            <Resources profile={profile} />
           )}
           
           {showFindTutor && (

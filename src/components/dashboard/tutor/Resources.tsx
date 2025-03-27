@@ -1,16 +1,10 @@
-import { useState } from 'react';
-import { TutorProfile } from '../../../types/database';
+import { useState, useEffect } from 'react';
+import { TutorProfile, Resource } from '../../../types/database';
 import { FileText, Upload, Download, Trash2, Search, Plus } from 'lucide-react';
-
-interface Resource {
-  id: string;
-  title: string;
-  description: string;
-  file_url: string;
-  file_type: string;
-  created_at: string;
-  subject: string;
-}
+import { DatabaseService } from '../../../services/database';
+import { RealtimeService } from '../../../services/realtime';
+import { supabase } from '../../../lib/supabase';
+import toast from 'react-hot-toast';
 
 interface ResourcesProps {
   profile: TutorProfile;
@@ -20,57 +14,187 @@ export function Resources({ profile }: ResourcesProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
   const [showUploadForm, setShowUploadForm] = useState(false);
-  
-  // Mock resources data (in a real app, this would come from the database)
-  const [resources, setResources] = useState<Resource[]>([
-    {
-      id: '1',
-      title: 'Calculus Fundamentals',
-      description: 'A comprehensive guide to calculus basics',
-      file_url: '/files/calculus-guide.pdf',
-      file_type: 'pdf',
-      created_at: new Date().toISOString(),
-      subject: 'Mathematics'
-    },
-    {
-      id: '2',
-      title: 'Physics Problem Set',
-      description: 'Practice problems for mechanics',
-      file_url: '/files/physics-problems.pdf',
-      file_type: 'pdf',
-      created_at: new Date().toISOString(),
-      subject: 'Physics'
-    },
-    {
-      id: '3',
-      title: 'Programming Exercises',
-      description: 'Coding exercises for beginners',
-      file_url: '/files/programming-exercises.zip',
-      file_type: 'zip',
-      created_at: new Date().toISOString(),
-      subject: 'Computer Science'
-    }
-  ]);
-  
-  // Filter resources based on search term and selected subject
-  const filteredResources = resources.filter(resource => {
-    const matchesSearch = resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          resource.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSubject = selectedSubject === '' || resource.subject === selectedSubject;
-    return matchesSearch && matchesSubject;
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [newResource, setNewResource] = useState({
+    title: '',
+    description: '',
+    subject: '',
+    file: null as File | null,
+    is_public: false
   });
-  
-  const handleDeleteResource = (id: string) => {
-    setResources(resources.filter(resource => resource.id !== id));
+
+  useEffect(() => {
+    loadResources();
+    subscribeToResourceUpdates();
+    return () => {
+      RealtimeService.unsubscribeFromChannel('resource-updates');
+    };
+  }, [profile.id]);
+
+  const loadResources = async () => {
+    try {
+      const tutorResources = await DatabaseService.getTutorResources(profile.id);
+      setResources(tutorResources);
+    } catch (error) {
+      console.error('Error loading resources:', error);
+      toast.error('Failed to load resources');
+    }
   };
-  
-  const handleUploadResource = (e: React.FormEvent) => {
+
+  const subscribeToResourceUpdates = () => {
+    RealtimeService.subscribeToResources(
+      profile.id,
+      'tutor',
+      (updatedResource) => {
+        setResources(prevResources => {
+          const existingIndex = prevResources.findIndex(r => r.id === updatedResource.id);
+          if (existingIndex >= 0) {
+            const updatedResources = [...prevResources];
+            updatedResources[existingIndex] = updatedResource;
+            return updatedResources;
+          } else {
+            return [...prevResources, updatedResource];
+          }
+        });
+      }
+    );
+  };
+
+  const handleFileUpload = async (file: File) => {
+    try {
+      setUploading(true);
+      
+      // Validate file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error('File size must be less than 10MB');
+      }
+
+      // Validate file type
+      const allowedTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/zip'
+      ];
+      
+      if (!allowedTypes.includes(file.type)) {
+        throw new Error('Invalid file type. Allowed types: PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, ZIP');
+      }
+
+      const fileExt = file.name.split('.').pop()?.toLowerCase();
+      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${profile.id}/${fileName}`;
+
+      console.log('Uploading file:', {
+        fileName,
+        filePath,
+        fileType: file.type,
+        fileSize: file.size,
+        tutorId: profile.id
+      });
+
+      // First, try to upload the file
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('tutor-resources')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: file.type
+        });
+
+      if (uploadError) {
+        console.error('Upload error details:', uploadError);
+        throw new Error(`Upload failed: ${uploadError.message}`);
+      }
+
+      console.log('File uploaded successfully:', uploadData);
+
+      // Then, get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('tutor-resources')
+        .getPublicUrl(filePath);
+
+      console.log('Public URL generated:', publicUrl);
+
+      return {
+        file_url: publicUrl,
+        file_type: fileExt || ''
+      };
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to upload file');
+      throw error;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleUploadResource = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this would upload the file to a storage service
-    // and save the metadata to the database
-    setShowUploadForm(false);
+    
+    if (!newResource.file) {
+      toast.error('Please select a file to upload');
+      return;
+    }
+
+    if (!newResource.title.trim()) {
+      toast.error('Please enter a title');
+      return;
+    }
+
+    if (!newResource.subject) {
+      toast.error('Please select a subject');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const { file_url, file_type } = await handleFileUpload(newResource.file);
+
+      const resource = await DatabaseService.createResource({
+        tutor_id: profile.id,
+        title: newResource.title.trim(),
+        description: newResource.description.trim(),
+        subject: newResource.subject,
+        file_url,
+        file_type,
+        is_public: newResource.is_public
+      });
+
+      setResources([resource, ...resources]);
+      setShowUploadForm(false);
+      setNewResource({
+        title: '',
+        description: '',
+        subject: '',
+        file: null,
+        is_public: false
+      });
+      toast.success('Resource uploaded successfully');
+    } catch (error) {
+      console.error('Error creating resource:', error);
+      toast.error('Failed to upload resource');
+    } finally {
+      setUploading(false);
+    }
   };
-  
+
+  const handleDeleteResource = async (id: string) => {
+    try {
+      await DatabaseService.deleteResource(id);
+      setResources(resources.filter(resource => resource.id !== id));
+      toast.success('Resource deleted successfully');
+    } catch (error) {
+      console.error('Error deleting resource:', error);
+      toast.error('Failed to delete resource');
+    }
+  };
+
   const getFileIcon = (fileType: string) => {
     switch (fileType) {
       case 'pdf':
@@ -90,9 +214,26 @@ export function Resources({ profile }: ResourcesProps) {
         return <FileText className="h-5 w-5 text-gray-500" />;
     }
   };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setNewResource(prev => ({
+        ...prev,
+        file: e.target.files![0]
+      }));
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    setNewResource(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+    }));
+  };
   
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
       <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
         <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4 flex justify-between items-center">
           <h2 className="text-lg font-semibold text-white flex items-center">
@@ -118,6 +259,9 @@ export function Resources({ profile }: ResourcesProps) {
                   <input
                     type="text"
                     id="title"
+                    name="title"
+                    value={newResource.title}
+                    onChange={handleInputChange}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                     required
                   />
@@ -126,6 +270,9 @@ export function Resources({ profile }: ResourcesProps) {
                   <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
                   <textarea
                     id="description"
+                    name="description"
+                    value={newResource.description}
+                    onChange={handleInputChange}
                     rows={3}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   ></textarea>
@@ -134,6 +281,9 @@ export function Resources({ profile }: ResourcesProps) {
                   <label htmlFor="subject" className="block text-sm font-medium text-gray-700">Subject</label>
                   <select
                     id="subject"
+                    name="subject"
+                    value={newResource.subject}
+                    onChange={handleInputChange}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                     required
                   >
@@ -154,22 +304,43 @@ export function Resources({ profile }: ResourcesProps) {
                           className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
                         >
                           <span>Upload a file</span>
-                          <input id="file-upload" name="file-upload" type="file" className="sr-only" />
+                          <input 
+                            id="file-upload" 
+                            name="file" 
+                            type="file" 
+                            className="sr-only" 
+                            onChange={handleFileChange}
+                            accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip"
+                          />
                         </label>
                         <p className="pl-1">or drag and drop</p>
                       </div>
                       <p className="text-xs text-gray-500">
-                        PDF, DOC, PPT, XLS, ZIP up to 10MB
+                        {newResource.file ? newResource.file.name : 'PDF, DOC, PPT, XLS, ZIP up to 10MB'}
                       </p>
                     </div>
                   </div>
                 </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="is_public"
+                    name="is_public"
+                    checked={newResource.is_public}
+                    onChange={handleInputChange}
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="is_public" className="ml-2 block text-sm text-gray-700">
+                    Make this resource public
+                  </label>
+                </div>
                 <div className="flex justify-end">
                   <button
                     type="submit"
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    disabled={uploading}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Upload Resource
+                    {uploading ? 'Uploading...' : 'Upload Resource'}
                   </button>
                 </div>
               </form>
@@ -205,7 +376,7 @@ export function Resources({ profile }: ResourcesProps) {
             </div>
           )}
           
-          {filteredResources.length > 0 ? (
+          {resources.length > 0 ? (
             <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
               <table className="min-w-full divide-y divide-gray-300">
                 <thead className="bg-gray-50">
@@ -219,7 +390,7 @@ export function Resources({ profile }: ResourcesProps) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
-                  {filteredResources.map((resource) => (
+                  {resources.map((resource) => (
                     <tr key={resource.id}>
                       <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-6">
                         <div className="flex items-center">
@@ -238,9 +409,14 @@ export function Resources({ profile }: ResourcesProps) {
                       </td>
                       <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                         <div className="flex justify-end space-x-2">
-                          <button className="text-indigo-600 hover:text-indigo-900">
+                          <a
+                            href={resource.file_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-indigo-600 hover:text-indigo-900"
+                          >
                             <Download className="h-4 w-4" />
-                          </button>
+                          </a>
                           <button 
                             onClick={() => handleDeleteResource(resource.id)}
                             className="text-red-600 hover:text-red-900"

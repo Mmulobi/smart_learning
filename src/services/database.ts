@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import type { TutorProfile, StudentProfile, Session, Message, Review, Earning } from '../types/database';
+import type { TutorProfile, StudentProfile, Session, Message, Review, Earning, Resource } from '../types/database';
 
 export class DatabaseService {
   static async getTutorProfile(userId: string): Promise<TutorProfile | null> {
@@ -326,5 +326,71 @@ export class DatabaseService {
 
     if (error) throw error;
     return data || [];
+  }
+
+  static async createResource(resource: Omit<Resource, 'id' | 'created_at' | 'updated_at'>): Promise<Resource> {
+    const { data, error } = await supabase
+      .from('resources')
+      .insert([resource])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async getTutorResources(tutorId: string): Promise<Resource[]> {
+    const { data, error } = await supabase
+      .from('resources')
+      .select('*')
+      .eq('tutor_id', tutorId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async getStudentResources(studentId: string): Promise<Resource[]> {
+    const { data, error } = await supabase
+      .from('resources')
+      .select('*')
+      .or(`is_public.eq.true,student_ids.cs.{${studentId}}`)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async updateResource(resourceId: string, updates: Partial<Resource>): Promise<Resource> {
+    const { data, error } = await supabase
+      .from('resources')
+      .update(updates)
+      .eq('id', resourceId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async deleteResource(resourceId: string): Promise<void> {
+    const { error } = await supabase
+      .from('resources')
+      .delete()
+      .eq('id', resourceId);
+
+    if (error) throw error;
+  }
+
+  static async shareResourceWithStudents(resourceId: string, studentIds: string[]): Promise<Resource> {
+    const { data, error } = await supabase
+      .from('resources')
+      .update({ student_ids: studentIds })
+      .eq('id', resourceId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 }

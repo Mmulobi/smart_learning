@@ -83,3 +83,17 @@ export interface Message {
   created_at: string;
   updated_at: string;
 }
+
+export interface Resource {
+  id: string;
+  tutor_id: string;
+  title: string;
+  description: string;
+  file_url: string;
+  file_type: string;
+  subject: string;
+  created_at: string;
+  updated_at: string;
+  is_public: boolean;
+  student_ids?: string[]; // Optional array of student IDs who have access
+}

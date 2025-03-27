@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { Session } from '../types/database';
+import { Session, Resource } from '../types/database';
 
 export class RealtimeService {
   static subscribeToSessions(
@@ -43,5 +43,32 @@ export class RealtimeService {
     } catch (error) {
       console.error('Error unsubscribing from channel:', error);
     }
+  }
+
+  static subscribeToResources(
+    userId: string,
+    role: 'student' | 'tutor',
+    onUpdate: (resource: Resource) => void
+  ) {
+    const channel = supabase
+      .channel('resource-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'resources',
+          filter: role === 'tutor' 
+            ? `tutor_id=eq.${userId}` 
+            : `is_public.eq.true,student_ids.cs.{${userId}}`
+        },
+        (payload) => {
+          const resource = payload.new as Resource;
+          onUpdate(resource);
+        }
+      )
+      .subscribe();
+      
+    return channel;
   }
 }

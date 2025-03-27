@@ -273,3 +273,284 @@ If you need to create a new Supabase project from scratch:
 13. Create triggers as described in Step 6
 
 Remember to update your application's environment variables (.env or .env.local file) with the new Supabase URL and anon key.
+
+# Supabase Dashboard Setup Instructions
+
+## 1. React Router Warnings Resolution
+
+### Warning 1: React Router Future Flag Warning (startTransition)
+This warning indicates that React Router v7 will use `React.startTransition` for state updates. To resolve this:
+
+1. Open your `vite.config.ts` file
+2. Add the following configuration:
+```typescript
+export default defineConfig({
+  // ... other config
+  define: {
+    'process.env.REACT_ROUTER_FUTURE_FLAGS': JSON.stringify({
+      v7_startTransition: true
+    })
+  }
+});
+```
+
+### Warning 2: Relative Route Resolution Warning
+This warning is about changes in route resolution within Splat routes in v7. To resolve:
+
+1. Open your `vite.config.ts` file
+2. Add the following configuration:
+```typescript
+export default defineConfig({
+  // ... other config
+  define: {
+    'process.env.REACT_ROUTER_FUTURE_FLAGS': JSON.stringify({
+      v7_relativeSplatPath: true
+    })
+  }
+});
+```
+
+## 2. Supabase Database Setup
+
+### Error: "relation 'public.resources' does not exist"
+This error occurs because the resources table hasn't been created in your Supabase database. Follow these steps to create it:
+
+1. Log in to your Supabase dashboard
+2. Navigate to the SQL Editor
+3. Create the resources table by running this SQL:
+
+```sql
+-- Create the resources table
+CREATE TABLE public.resources (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    tutor_id UUID REFERENCES public.tutor_profiles(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    description TEXT,
+    file_url TEXT NOT NULL,
+    file_type TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+    is_public BOOLEAN DEFAULT false,
+    student_ids UUID[] DEFAULT '{}'
+);
+
+-- Set up Row Level Security (RLS)
+ALTER TABLE public.resources ENABLE ROW LEVEL SECURITY;
+
+-- Create policies
+CREATE POLICY "Tutors can manage their own resources"
+    ON public.resources
+    FOR ALL
+    USING (auth.uid() = tutor_id);
+
+CREATE POLICY "Students can view public resources"
+    ON public.resources
+    FOR SELECT
+    USING (is_public = true);
+
+CREATE POLICY "Students can view shared resources"
+    ON public.resources
+    FOR SELECT
+    USING (auth.uid() = ANY(student_ids));
+
+-- Create storage bucket for resources
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('tutor-resources', 'tutor-resources', true);
+
+-- Set up storage policies
+CREATE POLICY "Tutors can upload resources"
+    ON storage.objects
+    FOR INSERT
+    WITH CHECK (
+        bucket_id = 'tutor-resources' AND
+        auth.uid() = (SELECT user_id FROM public.tutor_profiles WHERE id = (storage.foldername(name))[1]::uuid)
+    );
+
+CREATE POLICY "Anyone can view resources"
+    ON storage.objects
+    FOR SELECT
+    USING (bucket_id = 'tutor-resources');
+```
+
+4. After running the SQL, verify the table was created:
+   - Go to Table Editor in Supabase
+   - Check that the `resources` table exists
+   - Verify the columns and policies are set up correctly
+
+## 3. React DevTools Installation
+
+To install React DevTools for better development experience:
+
+1. For Chrome:
+   - Visit [Chrome Web Store](https://chrome.google.com/webstore/detail/react-developer-tools/fmkadmapgofadopljbjfkapdkoienihi)
+   - Click "Add to Chrome"
+   - Follow the installation prompts
+
+2. For Firefox:
+   - Visit [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/react-developer-tools/)
+   - Click "Add to Firefox"
+   - Follow the installation prompts
+
+## 4. Verify Setup
+
+After completing the above steps:
+
+1. Restart your development server
+2. Clear your browser cache
+3. Check the browser console for any remaining errors
+4. Test the resources functionality in both tutor and student dashboards
+
+## 5. Troubleshooting
+
+If you still encounter issues:
+
+1. Check Supabase connection:
+   - Verify your environment variables are set correctly
+   - Ensure your Supabase project is active
+   - Check if you have the correct permissions
+
+2. Database issues:
+   - Verify the table was created successfully
+   - Check if the RLS policies are working
+   - Ensure the storage bucket exists
+
+3. React Router issues:
+   - Clear your browser cache
+   - Check if the future flags are properly set
+   - Verify your React Router version is compatible
+
+## 6. Update the storage bucket configuration
+UPDATE storage.buckets
+SET public = true,
+    file_size_limit = 10485760, -- 10MB in bytes
+    allowed_mime_types = ARRAY[
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/zip'
+    ]
+WHERE id = 'tutor-resources';
+
+## 7. Update the storage policy to be more permissive for file uploads
+DROP POLICY IF EXISTS "Tutors can upload files" ON storage.objects;
+CREATE POLICY "Tutors can upload files"
+ON storage.objects
+FOR INSERT
+WITH CHECK (
+    bucket_id = 'tutor-resources' AND
+    auth.uid() = (SELECT user_id FROM public.tutor_profiles WHERE id = (storage.foldername(name))[1]::uuid)
+    AND
+    (storage.foldername(name))[1]::uuid IN (
+        SELECT id FROM public.tutor_profiles WHERE user_id = auth.uid()
+    )
+);
+
+-- First, drop existing policies to avoid conflicts
+DROP POLICY IF EXISTS "Tutors can upload files" ON storage.objects;
+DROP POLICY IF EXISTS "Anyone can view resources" ON storage.objects;
+DROP POLICY IF EXISTS "Tutors can manage their own resources" ON public.resources;
+DROP POLICY IF EXISTS "Students can view public resources" ON public.resources;
+DROP POLICY IF EXISTS "Students can view shared resources" ON public.resources;
+
+-- Enable RLS on the resources table
+ALTER TABLE public.resources ENABLE ROW LEVEL SECURITY;
+
+-- Create new policies for the resources table
+CREATE POLICY "Enable insert for tutors"
+ON public.resources
+FOR INSERT
+WITH CHECK (
+    auth.uid() IN (
+        SELECT user_id FROM public.tutor_profiles WHERE id = tutor_id
+    )
+);
+
+CREATE POLICY "Enable select for tutors"
+ON public.resources
+FOR SELECT
+USING (
+    auth.uid() IN (
+        SELECT user_id FROM public.tutor_profiles WHERE id = tutor_id
+    )
+);
+
+CREATE POLICY "Enable delete for tutors"
+ON public.resources
+FOR DELETE
+USING (
+    auth.uid() IN (
+        SELECT user_id FROM public.tutor_profiles WHERE id = tutor_id
+    )
+);
+
+CREATE POLICY "Enable update for tutors"
+ON public.resources
+FOR UPDATE
+USING (
+    auth.uid() IN (
+        SELECT user_id FROM public.tutor_profiles WHERE id = tutor_id
+    )
+);
+
+-- Create policies for students to view resources
+CREATE POLICY "Enable select for students"
+ON public.resources
+FOR SELECT
+USING (
+    is_public = true OR
+    auth.uid() IN (
+        SELECT user_id FROM public.student_profiles WHERE id = ANY(student_ids)
+    )
+);
+
+-- Update storage bucket configuration
+UPDATE storage.buckets
+SET public = true,
+    file_size_limit = 10485760, -- 10MB in bytes
+    allowed_mime_types = ARRAY[
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/zip'
+    ]
+WHERE id = 'tutor-resources';
+
+-- Enable RLS on storage objects
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+
+-- Create new storage policies
+CREATE POLICY "Enable upload for tutors"
+ON storage.objects
+FOR INSERT
+WITH CHECK (
+    bucket_id = 'tutor-resources' AND
+    auth.uid() IN (
+        SELECT user_id FROM public.tutor_profiles 
+        WHERE id::text = (storage.foldername(name))[1]
+    )
+);
+
+CREATE POLICY "Enable delete for tutors"
+ON storage.objects
+FOR DELETE
+USING (
+    bucket_id = 'tutor-resources' AND
+    auth.uid() IN (
+        SELECT user_id FROM public.tutor_profiles 
+        WHERE id::text = (storage.foldername(name))[1]
+    )
+);
+
+CREATE POLICY "Enable select for everyone"
+ON storage.objects
+FOR SELECT
+USING (bucket_id = 'tutor-resources');
