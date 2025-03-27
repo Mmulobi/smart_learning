@@ -88,7 +88,7 @@ export function Resources({ profile }: ResourcesProps) {
 
       const fileExt = file.name.split('.').pop()?.toLowerCase();
       const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${profile.id}/${fileName}`;
+      const filePath = fileName; // Simplified path structure
 
       console.log('Uploading file:', {
         fileName,
@@ -167,7 +167,7 @@ export function Resources({ profile }: ResourcesProps) {
       });
 
       setResources([resource, ...resources]);
-      setShowUploadForm(false);
+    setShowUploadForm(false);
       setNewResource({
         title: '',
         description: '',
@@ -194,7 +194,7 @@ export function Resources({ profile }: ResourcesProps) {
       toast.error('Failed to delete resource');
     }
   };
-
+  
   const getFileIcon = (fileType: string) => {
     switch (fileType) {
       case 'pdf':
