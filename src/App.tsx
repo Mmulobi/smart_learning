@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import { NavBar } from './components/NavBar';
-import { Home } from './components/Home';
 import { Toaster } from 'react-hot-toast';
 
 function App() {
@@ -31,11 +30,8 @@ function App() {
 
   useEffect(() => {
     if (!loading) {
-      const isAuthRoute = location.pathname.startsWith('/auth/');
+      const isAuthRoute = location.pathname.startsWith('/auth');
       const isDashboardRoute = location.pathname.includes('/dashboard');
-
-      console.log('Current path:', location.pathname);
-      console.log('Auth state:', { session, userRole, isAuthRoute, isDashboardRoute });
 
       if (session) {
         // If logged in and trying to access auth routes, redirect to dashboard
@@ -45,8 +41,7 @@ function App() {
       } else {
         // If not logged in and trying to access protected routes, redirect to auth
         if (isDashboardRoute) {
-          const role = location.pathname.includes('/tutor') ? 'tutor' : 'student';
-          navigate(`/auth/${role}`);
+          navigate('/auth');
         }
       }
     }
@@ -54,39 +49,22 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-white to-purple-100">
+        <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
+  // Check if we're on a dashboard page
+  const isDashboardPage = location.pathname.includes('/dashboard');
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <NavBar />
-      <main>
-        {location.pathname === '/' ? (
-          <Home />
-        ) : (
-          <Outlet />
-        )}
-      </main>
-      <Toaster position="top-right" toastOptions={{
-        success: {
-          duration: 3000,
-          style: {
-            background: '#10B981',
-            color: 'white',
-          },
-        },
-        error: {
-          duration: 4000,
-          style: {
-            background: '#EF4444',
-            color: 'white',
-          },
-        },
-      }} />
-    </div>
+    <>
+      {!isDashboardPage && <NavBar />}
+      <Outlet />
+      <Toaster position="top-right" />
+    </>
   );
 }
+
 export default App;

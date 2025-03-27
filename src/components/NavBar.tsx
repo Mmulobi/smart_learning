@@ -85,13 +85,13 @@ export function NavBar() {
             {!isAuthPage && !isDashboardPage && (
               <>
                 <Link
-                  to="/auth"
+                  to="/auth?mode=signin"
                   className="text-gray-300 hover:text-white transition-colors duration-200"
                 >
                   Sign In
                 </Link>
                 <Link
-                  to="/auth"
+                  to="/auth?mode=signup"
                   className="px-4 py-2 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-300"
                 >
                   Get Started
@@ -149,14 +149,14 @@ export function NavBar() {
                 {!isAuthPage && !isDashboardPage && (
                   <>
                     <Link
-                      to="/auth"
+                      to="/auth?mode=signin"
                       className="block w-full text-center px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors duration-200"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       Sign In
                     </Link>
                     <Link
-                      to="/auth"
+                      to="/auth?mode=signup"
                       className="block w-full text-center px-4 py-2 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-300"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
