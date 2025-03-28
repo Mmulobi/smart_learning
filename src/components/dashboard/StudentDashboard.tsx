@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { DatabaseService } from '../../services/database';
 import { RealtimeService } from '../../services/realtime';
 import type { StudentProfile, TutorProfile, Session } from '../../types/database';
-import { User, Bell, Search, X, ChevronLeft, Settings, ExternalLink, AlertCircle, Video, Menu, LayoutDashboard, Calendar, BookOpen, MessageSquare, Activity } from 'lucide-react';
+import { User, Bell, Search, X, ChevronLeft, Settings, ExternalLink, AlertCircle, Video, Menu, LayoutDashboard, Calendar, BookOpen, MessageSquare, Activity, Clock } from 'lucide-react';
 import { Sidebar } from './student/Sidebar';
 import { Dashboard } from './student/Dashboard';
 import { LiveSessions } from './student/LiveSessions';
@@ -16,6 +16,7 @@ import { PerformanceAnalyticsPage } from './student/PerformanceAnalyticsPage';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast, { Toaster } from 'react-hot-toast';
 import { Resources } from './student/Resources';
+import { ScheduledSessions } from './student/ScheduledSessions';
 
 export function StudentDashboard() {
   // Core state
@@ -294,27 +295,42 @@ export function StudentDashboard() {
   
   const unreadCount = notifications.filter(n => !n.read).length;
 
+  // Calculate performance data
+  const performanceData = profile ? {
+    subjects: profile.subjects,
+    progress: profile.subjects.map(() => Math.floor(Math.random() * 100)),
+    scores: profile.subjects.map(() => Math.floor(Math.random() * 40) + 60),
+    sessionsCompleted: sessions.filter(s => s.status === 'completed').length,
+    totalHours: sessions.filter(s => s.status === 'completed')
+      .reduce((total, session) => {
+        const startTime = new Date(session.start_time);
+        const endTime = new Date(session.end_time);
+        const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+        return total + durationHours;
+      }, 0)
+  } : null;
+
   const renderContent = () => {
-  if (loading) {
-    return (
-          <motion.div 
+    if (loading) {
+      return (
+        <motion.div 
           className="flex-1 flex items-center justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-200"></div>
-            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-indigo-600 absolute top-0 left-0"></div>
-            <div className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center">
-              <div className="h-8 w-8 bg-white rounded-full shadow-md"></div>
-            </div>
-            <p className="text-center mt-6 text-indigo-600 font-medium">Loading your dashboard...</p>
-          </motion.div>
-    );
-  }
+          transition={{ duration: 0.5 }}
+        >
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-200"></div>
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-indigo-600 absolute top-0 left-0"></div>
+          <div className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center">
+            <div className="h-8 w-8 bg-white rounded-full shadow-md"></div>
+          </div>
+          <p className="text-center mt-6 text-indigo-600 font-medium">Loading your dashboard...</p>
+        </motion.div>
+      );
+    }
 
-  if (!profile) {
-    return (
+    if (!profile) {
+      return (
         <motion.div 
           className="flex-1 flex items-center justify-center"
           initial={{ opacity: 0 }}
@@ -347,45 +363,30 @@ export function StudentDashboard() {
             </motion.button>
           </motion.div>
         </motion.div>
-    );
-  }
-
-    if (error) {
-  return (
-              <motion.div 
-                className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg shadow-sm relative mb-6"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <div className="flex items-center">
-                  <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
-                  <p>{error}</p>
-                </div>
-                <button 
-                  className="absolute top-0 bottom-0 right-0 px-4 py-3"
-                  onClick={() => setError(null)}
-                >
-                  <span className="text-red-500">×</span>
-                </button>
-              </motion.div>
       );
     }
 
-    // Calculate performance data
-    const performanceData = {
-      subjects: profile.subjects,
-      progress: profile.subjects.map(() => Math.floor(Math.random() * 100)),
-      scores: profile.subjects.map(() => Math.floor(Math.random() * 40) + 60),
-      sessionsCompleted: sessions.filter(s => s.status === 'completed').length,
-      totalHours: sessions.filter(s => s.status === 'completed')
-        .reduce((total, session) => {
-          const startTime = new Date(session.start_time);
-          const endTime = new Date(session.end_time);
-          const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-          return total + durationHours;
-        }, 0)
-    };
+    if (error) {
+      return (
+        <motion.div 
+          className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg shadow-sm relative mb-6"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="flex items-center">
+            <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+            <p>{error}</p>
+          </div>
+          <button 
+            className="absolute top-0 bottom-0 right-0 px-4 py-3"
+            onClick={() => setError(null)}
+          >
+            <span className="text-red-500">×</span>
+          </button>
+        </motion.div>
+      );
+    }
 
     switch (activeTab) {
       case 'dashboard':
@@ -395,54 +396,15 @@ export function StudentDashboard() {
       case 'resources':
         return <Resources profile={profile} />;
       case 'messages':
-        return <div>Messages tab</div>;
+        return <div>Messages</div>;
       case 'performance':
-        return <PerformanceAnalyticsPage data={performanceData} />;
+        return performanceData ? <PerformanceAnalyticsPage data={performanceData} /> : null;
       case 'find-tutor':
-        return (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-1">
-                <TutorFinder 
-                  tutors={tutors} 
-                  onSelectTutor={handleSelectTutor} 
-                  selectedTutorId={selectedTutor?.id}
-                />
-              </div>
-              <div className="lg:col-span-2">
-                {selectedTutor ? (
-                  <div className="bg-white shadow-md rounded-lg overflow-hidden">
-                    <TutorDetails 
-                      tutor={selectedTutor} 
-                      onScheduleSession={() => {
-                        setShowScheduler(true);
-                        setShowFindTutor(false);
-                      }} 
-                    />
-                  </div>
-                ) : (
-                  <div className="bg-white shadow-md rounded-lg p-6 flex flex-col items-center justify-center h-full">
-                    <div className="h-24 w-24 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
-                      <Search className="h-12 w-12 text-indigo-500" />
-                    </div>
-                    <h3 className="text-xl font-medium text-gray-900 mb-2">Find Your Perfect Mentor</h3>
-                    <p className="text-gray-600 text-center max-w-md mb-6">
-                      Select a mentor from the list to view their details and schedule a personalized learning session.
-                    </p>
-                    <button
-                      onClick={handleCloseFind}
-                      className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md text-gray-800 text-sm font-medium transition-colors duration-150"
-                    >
-                      Back to Dashboard
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-        );
-      case 'settings':
-        return <div>Settings tab</div>;
+        return <TutorFinder tutors={tutors} onSelectTutor={handleSelectTutor} selectedTutorId={selectedTutor?.id} />;
+      case 'scheduled-sessions':
+        return <ScheduledSessions />;
       default:
-        return <div>Unknown tab</div>;
+        return <Dashboard profile={profile} sessions={sessions} />;
     }
   };
 
@@ -492,7 +454,8 @@ export function StudentDashboard() {
           <nav className="mt-4">
             {[
               { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-              { id: 'sessions', icon: Calendar, label: 'Live Sessions' },
+              { id: 'sessions', icon: Video, label: 'Live Sessions' },
+              { id: 'scheduled-sessions', icon: Clock, label: 'Scheduled Sessions' },
               { id: 'resources', icon: BookOpen, label: 'Resources' },
               { id: 'messages', icon: MessageSquare, label: 'Messages' },
               { id: 'performance', icon: Activity, label: 'Performance' },

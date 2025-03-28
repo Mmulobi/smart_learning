@@ -3,6 +3,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import { NavBar } from './components/NavBar';
 import { Toaster } from 'react-hot-toast';
+import { ScheduledSessions } from './components/dashboard/student/ScheduledSessions';
 
 function App() {
   const [session, setSession] = useState<any>(null);

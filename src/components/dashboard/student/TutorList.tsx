@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Star, Award, Clock, Calendar, BookOpen, MessageCircle, Search, Filter, MapPin, GraduationCap, Briefcase, ChevronLeft, ChevronRight, SlidersHorizontal, ArrowLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { TutorProfileModal } from './TutorProfileModal';
+import { TutorBooking } from './TutorBooking';
 import { useNavigate } from 'react-router-dom';
 
 interface TutorListProps {
@@ -24,6 +25,7 @@ export function TutorFinder({ tutors, onSelectTutor, selectedTutorId }: TutorLis
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTutor, setSelectedTutor] = useState<TutorProfile | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showBooking, setShowBooking] = useState(false);
 
   // Animation variants
   const container = {
@@ -121,10 +123,14 @@ export function TutorFinder({ tutors, onSelectTutor, selectedTutorId }: TutorLis
 
   const handleBookSession = () => {
     if (selectedTutor) {
-      onSelectTutor(selectedTutor);
       setIsModalOpen(false);
-      setSelectedTutor(null);
+      setShowBooking(true);
     }
+  };
+
+  const handleCloseBooking = () => {
+    setShowBooking(false);
+    setSelectedTutor(null);
   };
 
   return (
@@ -424,6 +430,16 @@ export function TutorFinder({ tutors, onSelectTutor, selectedTutorId }: TutorLis
             tutor={selectedTutor}
             onClose={handleCloseModal}
             onBookSession={handleBookSession}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Tutor Booking Page */}
+      <AnimatePresence>
+        {showBooking && selectedTutor && (
+          <TutorBooking
+            tutor={selectedTutor}
+            onClose={handleCloseBooking}
           />
         )}
       </AnimatePresence>
