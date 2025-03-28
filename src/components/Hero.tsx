@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useRef, Suspense } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import { Canvas } from '@react-three/fiber';
 import { Users, BookOpen, Award, Sparkles } from 'lucide-react';
 import { Scene3D } from './Scene3D';
@@ -19,8 +19,23 @@ export function Hero() {
     offset: ["start start", "end start"]
   });
 
-  const y = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+  // Smooth parallax effect
+  const y = useSpring(
+    useTransform(scrollYProgress, [0, 1], ["0%", "50%"]),
+    { stiffness: 100, damping: 30 }
+  );
+  
+  // Fade out effect
+  const opacity = useSpring(
+    useTransform(scrollYProgress, [0, 0.5], [1, 0]),
+    { stiffness: 100, damping: 30 }
+  );
+
+  // Scale effect for background elements
+  const scale = useSpring(
+    useTransform(scrollYProgress, [0, 0.5], [1, 1.2]),
+    { stiffness: 100, damping: 30 }
+  );
 
   const stats: Stat[] = [
     { value: "10,000+", label: "Active Students", icon: <Users className="h-5 w-5" />, color: "from-blue-500 to-indigo-600" },
@@ -31,8 +46,11 @@ export function Hero() {
 
   return (
     <div ref={containerRef} className="relative min-h-screen bg-gradient-to-b from-indigo-950 via-purple-900 to-indigo-950 overflow-hidden">
-      {/* 3D Background */}
-      <div className="absolute inset-0">
+      {/* 3D Background with Parallax */}
+      <motion.div 
+        className="absolute inset-0"
+        style={{ scale }}
+      >
         <Suspense fallback={null}>
           <Canvas
             camera={{ position: [0, 0, 5], fov: 75 }}
@@ -42,10 +60,13 @@ export function Hero() {
             <Scene3D />
           </Canvas>
         </Suspense>
-      </div>
+      </motion.div>
 
-      {/* Main Content */}
-      <div className="relative z-10 px-6 py-24 md:py-32 lg:py-40 max-w-7xl mx-auto">
+      {/* Main Content with Parallax */}
+      <motion.div 
+        className="relative z-10 px-6 py-24 md:py-32 lg:py-40 max-w-7xl mx-auto"
+        style={{ y, opacity }}
+      >
         <div className="flex flex-col lg:flex-row items-center">
           {/* Text Content */}
           <motion.div
@@ -78,7 +99,7 @@ export function Hero() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-lg p-3"
+                  className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-lg p-3 hover-smooth hover:bg-white/20"
                 >
                   <span className="text-xl">{feature.icon}</span>
                   <span className="text-sm text-gray-200">{feature.text}</span>
@@ -87,19 +108,20 @@ export function Hero() {
             </div>
           </motion.div>
 
-          {/* Image Grid */}
+          {/* Image Grid with Parallax */}
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8 }}
             className="lg:w-1/2 relative h-[400px] md:h-[500px] w-full max-w-lg mx-auto"
+            style={{ y: useTransform(scrollYProgress, [0, 1], [0, 100]) }}
           >
             <div className="grid grid-cols-2 gap-4 h-full">
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="relative rounded-2xl overflow-hidden"
+                className="relative rounded-2xl overflow-hidden hover-smooth hover:shadow-xl hover:shadow-indigo-500/20"
               >
                 <img
                   src="/tutor.jpg"
@@ -112,7 +134,7 @@ export function Hero() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, delay: 0.4 }}
-                className="relative rounded-2xl overflow-hidden"
+                className="relative rounded-2xl overflow-hidden hover-smooth hover:shadow-xl hover:shadow-purple-500/20"
               >
                 <img
                   src="/student1.jpg"
@@ -125,12 +147,13 @@ export function Hero() {
           </motion.div>
         </div>
 
-        {/* Stats Banner */}
+        {/* Stats Banner with Parallax */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.6 }}
-          className="mt-12 bg-white/10 backdrop-blur-sm rounded-xl p-4"
+          className="mt-12 bg-white/10 backdrop-blur-sm rounded-xl p-4 hover-smooth hover:bg-white/20"
+          style={{ y: useTransform(scrollYProgress, [0, 1], [0, 50]) }}
         >
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {stats.map((stat, index) => (
@@ -139,7 +162,7 @@ export function Hero() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.7 + index * 0.1 }}
-                className="flex flex-col items-center p-4"
+                className="flex flex-col items-center p-4 hover-smooth hover:scale-105"
               >
                 <div className={`flex items-center justify-center p-2 rounded-full bg-gradient-to-r ${stat.color} text-white mb-2`}>
                   {stat.icon}
@@ -150,7 +173,7 @@ export function Hero() {
             ))}
           </div>
         </motion.div>
-      </div>
+      </motion.div>
     </div>
   );
 }
