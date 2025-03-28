@@ -398,14 +398,23 @@ export class DatabaseService {
     try {
       const { data, error } = await supabase
         .from('sessions')
-        .select('session_amount')
+        .select(`
+          duration,
+          tutor_profiles (
+            hourly_rate
+          )
+        `)
         .eq('tutor_id', tutorId)
         .eq('status', 'completed');
 
       if (error) throw error;
       if (!data) return 0;
 
-      return data.reduce((total, session) => total + (session.session_amount || 0), 0);
+      return data.reduce((total, session) => {
+        const hourlyRate = session.tutor_profiles?.[0]?.hourly_rate || 0;
+        const durationInHours = session.duration / 60; // Convert minutes to hours
+        return total + (hourlyRate * durationInHours);
+      }, 0);
     } catch (error) {
       console.error('Error getting tutor earnings:', error);
       throw error;
@@ -436,13 +445,15 @@ export class DatabaseService {
         .from('sessions')
         .select(`
           id,
-          session_amount,
           duration,
           created_at,
+          subject,
+          tutor_profiles (
+            hourly_rate
+          ),
           student_profiles (
             name
-          ),
-          subject
+          )
         `)
         .eq('tutor_id', tutorId)
         .eq('status', 'completed')
@@ -452,14 +463,20 @@ export class DatabaseService {
       if (error) throw error;
       if (!data) return [];
 
-      return data.map(session => ({
-        id: session.id,
-        date: session.created_at,
-        amount: session.session_amount,
-        duration: session.duration,
-        session_title: `${session.subject} Session`,
-        student_name: session.student_profiles?.[0]?.name || 'Unknown Student'
-      }));
+      return data.map(session => {
+        const hourlyRate = session.tutor_profiles?.[0]?.hourly_rate || 0;
+        const durationInHours = session.duration / 60; // Convert minutes to hours
+        const amount = hourlyRate * durationInHours;
+
+        return {
+          id: session.id,
+          date: session.created_at,
+          amount: amount,
+          duration: session.duration,
+          session_title: `${session.subject} Session`,
+          student_name: session.student_profiles?.[0]?.name || 'Unknown Student'
+        };
+      });
     } catch (error) {
       console.error('Error getting tutor earnings history:', error);
       throw error;
@@ -495,8 +512,7 @@ export class DatabaseService {
             id,
             name,
             email,
-            subjects,
-            rating
+            subjects
           )
         `)
         .eq('tutor_id', tutorId)
@@ -522,6 +538,21 @@ export class DatabaseService {
       return Array.from(uniqueStudents.values());
     } catch (error) {
       console.error('Error getting tutor students:', error);
+      throw error;
+    }
+  }
+
+  static async getAllStudents(): Promise<StudentProfile[]> {
+    try {
+      const { data, error } = await supabase
+        .from('student_profiles')
+        .select('*')
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching all students:', error);
       throw error;
     }
   }

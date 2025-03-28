@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, Star, Users, ChevronRight } from 'lucide-react';
-import { TutorProfile, Session } from '../../../types/database';
+import { TutorProfile, Session, Earning } from '../../../types/database';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
 interface DashboardProps {
   profile: TutorProfile;
   sessions: Session[];
+  earnings: Earning[];
   insights: {
     student: {
       id: string;
@@ -23,6 +24,7 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({
   profile,
   sessions,
+  earnings,
   insights,
   onMessageStudent,
 }) => {

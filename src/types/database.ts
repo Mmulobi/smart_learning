@@ -31,6 +31,7 @@ export interface StudentProfile {
   subjects: string[];
   bio?: string;
   image_url?: string;
+  session_count?: number;
   created_at: string;
   updated_at: string;
 }

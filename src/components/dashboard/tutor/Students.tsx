@@ -33,8 +33,8 @@ export function Students({ profile }: StudentsProps) {
   const loadStudents = async () => {
     try {
       setLoading(true);
-      const tutorStudents = await DatabaseService.getTutorStudents(profile.id);
-      setStudents(tutorStudents);
+      const allStudents = await DatabaseService.getAllStudents();
+      setStudents(allStudents);
     } catch (error) {
       console.error('Error loading students:', error);
       toast.error('Failed to load students');
@@ -55,9 +55,7 @@ export function Students({ profile }: StudentsProps) {
         case 'name':
           return a.name.localeCompare(b.name);
         case 'sessions':
-          return (b.sessions || 0) - (a.sessions || 0);
-        case 'rating':
-          return (b.rating || 0) - (a.rating || 0);
+          return (b.session_count || 0) - (a.session_count || 0);
         default:
           return 0;
       }
@@ -145,7 +143,6 @@ export function Students({ profile }: StudentsProps) {
                 >
                   <option value="name">Name</option>
                   <option value="sessions">Sessions</option>
-                  <option value="rating">Rating</option>
                 </select>
               </div>
             </div>
@@ -199,11 +196,7 @@ export function Students({ profile }: StudentsProps) {
                     </div>
                     <div className="flex items-center text-sm text-gray-500">
                       <Clock className="h-4 w-4 mr-2" />
-                      <span>{student.sessions || 0} sessions</span>
-                    </div>
-                    <div className="flex items-center text-sm text-gray-500">
-                      <Star className="h-4 w-4 mr-2 text-yellow-400" />
-                      <span>{student.rating || 'No rating'}</span>
+                      <span>{student.session_count || 0} sessions</span>
                     </div>
                   </div>
 
