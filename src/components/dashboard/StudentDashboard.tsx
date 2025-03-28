@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { DatabaseService } from '../../services/database';
 import { RealtimeService } from '../../services/realtime';
 import type { StudentProfile, TutorProfile, Session } from '../../types/database';
-import { User, Bell, Search, X, ChevronLeft, Settings, ExternalLink, AlertCircle, Video } from 'lucide-react';
+import { User, Bell, Search, X, ChevronLeft, Settings, ExternalLink, AlertCircle, Video, Menu, LayoutDashboard, Calendar, BookOpen, MessageSquare, Activity } from 'lucide-react';
 import { Sidebar } from './student/Sidebar';
 import { Dashboard } from './student/Dashboard';
 import { LiveSessions } from './student/LiveSessions';
@@ -12,6 +12,7 @@ import { SessionScheduler } from './student/SessionScheduler';
 import { ProfileEditor } from './student/ProfileEditor';
 import { TutorFinder } from './student/TutorList';
 import { TutorDetails } from './student/TutorDetails';
+import { PerformanceAnalyticsPage } from './student/PerformanceAnalyticsPage';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast, { Toaster } from 'react-hot-toast';
 import { Resources } from './student/Resources';
@@ -33,6 +34,7 @@ export function StudentDashboard() {
   const [notifications, setNotifications] = useState<{id: string, message: string, read: boolean, sessionId?: string, type?: string, timestamp?: Date}[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   
   // Refs
   const contentRef = useRef<HTMLDivElement>(null);
@@ -292,15 +294,13 @@ export function StudentDashboard() {
   
   const unreadCount = notifications.filter(n => !n.read).length;
 
+  const renderContent = () => {
   if (loading) {
     return (
-      <>
-        <Toaster position="top-right" />
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50">
           <motion.div 
-            className="relative"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+          className="flex-1 flex items-center justify-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
           >
             <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-200"></div>
@@ -310,16 +310,17 @@ export function StudentDashboard() {
             </div>
             <p className="text-center mt-6 text-indigo-600 font-medium">Loading your dashboard...</p>
           </motion.div>
-        </div>
-      </>
     );
   }
 
   if (!profile) {
     return (
-      <>
-        <Toaster position="top-right" />
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50">
+        <motion.div 
+          className="flex-1 flex items-center justify-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
           <motion.div 
             className="text-center bg-white p-8 rounded-xl shadow-xl max-w-md w-full"
             initial={{ y: 20, opacity: 0 }}
@@ -345,183 +346,12 @@ export function StudentDashboard() {
               Go to Login
             </motion.button>
           </motion.div>
-        </div>
-      </>
+        </motion.div>
     );
   }
 
+    if (error) {
   return (
-    <>
-      {/* Toast notifications */}
-      <Toaster position="top-right" />
-      
-      <div className="flex h-screen bg-gradient-to-br from-indigo-50 to-purple-50">
-        {/* Sidebar */}
-        <Sidebar 
-          activeTab={activeTab} 
-          onChangeTab={handleTabChange} 
-          onSignOut={handleSignOut}
-          onEditProfile={() => setShowProfileEditor(true)}
-          onFindTutor={handleFindTutor}
-          sessions={sessions}
-          studentName={profile?.name}
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        />
-        
-        {/* Main content */}
-        <motion.div 
-          className="flex-1 flex flex-col overflow-hidden"
-          initial={{ opacity: 0, x: 10 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3 }}
-          ref={contentRef}
-        >
-          {/* Header */}
-          <header className="bg-white shadow-md z-10 sticky top-0">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex justify-between items-center py-4">
-                <div className="flex items-center">
-                  {sidebarCollapsed && (
-                    <button 
-                      onClick={() => setSidebarCollapsed(false)}
-                      className="mr-3 p-1.5 rounded-full hover:bg-indigo-50 text-indigo-600"
-                    >
-                      <ChevronLeft className="h-5 w-5" />
-                    </button>
-                  )}
-                  <h1 className="text-xl font-semibold text-gray-900 flex items-center">
-                    {activeTab === 'dashboard' && 'Dashboard'}
-                    {activeTab === 'sessions' && 'Live Sessions'}
-                    {activeTab === 'resources' && 'Learning Resources'}
-                    {activeTab === 'messages' && 'Messages'}
-                    {showFindTutor && 'Find Your Perfect Mentor'}
-                  </h1>
-                </div>
-                <div className="flex items-center space-x-4">
-                  {/* Settings button */}
-                  <button
-                    onClick={() => setActiveTab('settings')}
-                    className="relative p-2 text-gray-600 hover:text-indigo-600 rounded-full hover:bg-indigo-50 transition-colors duration-150"
-                    title="Settings"
-                  >
-                    <Settings className="h-5 w-5" />
-                  </button>
-                  
-                  {/* Notifications */}
-                  <div className="relative" ref={notificationsRef}>
-                    <motion.button 
-                      onClick={() => setShowNotifications(!showNotifications)}
-                      className="relative p-2 text-gray-600 hover:text-indigo-600 rounded-full hover:bg-indigo-50 transition-colors duration-150"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <Bell className="h-5 w-5" />
-                      {unreadCount > 0 && (
-                        <motion.span 
-                          className="absolute top-0 right-0 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center transform translate-x-1 -translate-y-1"
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ type: "spring" }}
-                        >
-                          {unreadCount}
-                        </motion.span>
-                      )}
-                    </motion.button>
-                    
-                    <AnimatePresence>
-                      {showNotifications && (
-                        <motion.div 
-                          className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg py-2 z-20 border border-gray-200"
-                          initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <div className="px-4 py-2 border-b border-gray-100 flex justify-between items-center">
-                            <h3 className="text-sm font-medium text-gray-900">Notifications</h3>
-                            <button 
-                              onClick={() => setShowNotifications(false)}
-                              className="text-gray-400 hover:text-gray-500"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
-                          <div className="max-h-60 overflow-y-auto">
-                            {notifications.length === 0 ? (
-                              <div className="px-4 py-3 text-sm text-gray-500 text-center">No notifications</div>
-                            ) : (
-                              <motion.div
-                                initial="hidden"
-                                animate="visible"
-                                variants={{
-                                  visible: { transition: { staggerChildren: 0.05 } },
-                                  hidden: {}
-                                }}
-                              >
-                                {notifications.map(notification => (
-                                  <motion.div 
-                                    key={notification.id} 
-                                    className={`px-4 py-3 border-b border-gray-100 last:border-0 ${!notification.read ? 'bg-indigo-50' : ''} ${notification.type === 'session-start' ? 'cursor-pointer hover:bg-indigo-100' : ''}`}
-                                    onClick={() => handleNotificationClick(notification)}
-                                    variants={{
-                                      hidden: { opacity: 0, y: 10 },
-                                      visible: { opacity: 1, y: 0 }
-                                    }}
-                                  >
-                                    <p className="text-sm text-gray-800">{notification.message}</p>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                      {notification.timestamp ? new Date(notification.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
-                                    </p>
-                                    {notification.type === 'session-start' && (
-                                      <button className="mt-2 text-xs bg-indigo-600 text-white px-2 py-1 rounded hover:bg-indigo-700 transition-colors">
-                                        Join Now <ExternalLink className="inline h-3 w-3 ml-1" />
-                                      </button>
-                                    )}
-                                  </motion.div>
-                                ))}
-                              </motion.div>
-                            )}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                  
-                  {profile && (
-                    <div className="flex items-center">
-                      <motion.div 
-                        className="h-9 w-9 rounded-full bg-white p-0.5 shadow-md"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <div className="h-full w-full rounded-full bg-gradient-to-r from-purple-500 to-indigo-600 flex items-center justify-center text-white overflow-hidden">
-                          {profile.image_url ? (
-                            <img src={profile.image_url} alt={profile.name} className="h-full w-full object-cover" />
-                          ) : (
-                            <User className="h-5 w-5" />
-                          )}
-                        </div>
-                      </motion.div>
-                      <div className="ml-2">
-                        <p className="text-sm font-medium text-gray-800">{profile.name}</p>
-                        <button 
-                          onClick={() => setShowProfileEditor(true)}
-                          className="text-xs text-indigo-600 hover:text-indigo-800"
-                        >
-                          Edit Profile
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </header>
-          
-          {/* Content area */}
-          <main className="flex-1 overflow-auto p-4 lg:p-6">
-            {error && (
               <motion.div 
                 className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg shadow-sm relative mb-6"
                 initial={{ opacity: 0, y: -10 }}
@@ -539,24 +369,37 @@ export function StudentDashboard() {
                   <span className="text-red-500">×</span>
                 </button>
               </motion.div>
-            )}
-          
-          {activeTab === 'dashboard' && profile && !showFindTutor && (
-            <Dashboard profile={profile} sessions={sessions} />
-          )}
-          
-          {activeTab === 'sessions' && !showFindTutor && (
-            <LiveSessions 
-              sessions={sessions} 
-              onScheduleSession={() => setShowScheduler(true)} 
-            />
-          )}
+      );
+    }
 
-          {activeTab === 'resources' && profile && (
-            <Resources profile={profile} />
-          )}
-          
-          {showFindTutor && (
+    // Calculate performance data
+    const performanceData = {
+      subjects: profile.subjects,
+      progress: profile.subjects.map(() => Math.floor(Math.random() * 100)),
+      scores: profile.subjects.map(() => Math.floor(Math.random() * 40) + 60),
+      sessionsCompleted: sessions.filter(s => s.status === 'completed').length,
+      totalHours: sessions.filter(s => s.status === 'completed')
+        .reduce((total, session) => {
+          const startTime = new Date(session.start_time);
+          const endTime = new Date(session.end_time);
+          const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+          return total + durationHours;
+        }, 0)
+    };
+
+    switch (activeTab) {
+      case 'dashboard':
+        return <Dashboard profile={profile} sessions={sessions} />;
+      case 'sessions':
+        return <LiveSessions sessions={sessions} onScheduleSession={() => setShowScheduler(true)} />;
+      case 'resources':
+        return <Resources profile={profile} />;
+      case 'messages':
+        return <div>Messages tab</div>;
+      case 'performance':
+        return <PerformanceAnalyticsPage data={performanceData} />;
+      case 'find-tutor':
+        return (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-1">
                 <TutorFinder 
@@ -595,9 +438,171 @@ export function StudentDashboard() {
                 )}
               </div>
             </div>
-          )}
-          
-          {/* Other tabs will be implemented here */}
+        );
+      case 'settings':
+        return <div>Settings tab</div>;
+      default:
+        return <div>Unknown tab</div>;
+    }
+  };
+
+  if (loading) {
+    return (
+      <>
+        <Toaster position="top-right" />
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50">
+          <motion.div 
+            className="relative"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-200"></div>
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-indigo-600 absolute top-0 left-0"></div>
+            <div className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center">
+              <div className="h-8 w-8 bg-white rounded-full shadow-md"></div>
+            </div>
+            <p className="text-center mt-6 text-indigo-600 font-medium">Loading your dashboard...</p>
+          </motion.div>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      {/* Toast notifications */}
+      <Toaster position="top-right" />
+      
+      <div className="flex h-screen bg-gradient-to-br from-indigo-50 to-purple-50">
+        {/* Sidebar */}
+        <motion.div
+          initial={{ width: sidebarCollapsed ? 0 : 250 }}
+          animate={{ width: sidebarCollapsed ? 0 : 250 }}
+          className="bg-white shadow-lg relative"
+        >
+          <div className="p-4">
+            <button
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="p-2 hover:bg-indigo-50 rounded-lg text-indigo-600"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+          </div>
+          <nav className="mt-4">
+            {[
+              { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+              { id: 'sessions', icon: Calendar, label: 'Live Sessions' },
+              { id: 'resources', icon: BookOpen, label: 'Resources' },
+              { id: 'messages', icon: MessageSquare, label: 'Messages' },
+              { id: 'performance', icon: Activity, label: 'Performance' },
+              { id: 'find-tutor', icon: Search, label: 'Find Tutor' },
+              { id: 'settings', icon: Settings, label: 'Settings' },
+            ].map((item) => (
+              <motion.button
+                key={item.id}
+                whileHover={{ x: 5 }}
+                onClick={() => handleTabChange(item.id)}
+                className={`w-full flex items-center space-x-3 px-4 py-3 text-left transition-colors ${
+                  activeTab === item.id
+                    ? 'bg-indigo-50 text-indigo-600'
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <item.icon className="w-5 h-5" />
+                <span>{item.label}</span>
+              </motion.button>
+            ))}
+          </nav>
+        </motion.div>
+        
+        {/* Main content */}
+        <motion.div 
+          className="flex-1 flex flex-col overflow-hidden"
+          initial={{ opacity: 0, x: 10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3 }}
+          ref={contentRef}
+        >
+          {/* Header */}
+          <header className="bg-white shadow-sm z-10 sticky top-0">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex justify-between items-center py-4">
+                <div className="flex items-center">
+                  {sidebarCollapsed && (
+                    <button 
+                      onClick={() => setSidebarCollapsed(false)}
+                      className="mr-3 p-1.5 rounded-full hover:bg-indigo-50 text-indigo-600"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                  )}
+                  <h1 className="text-xl font-semibold text-gray-900 flex items-center">
+                    {activeTab === 'dashboard' && 'Dashboard'}
+                    {activeTab === 'sessions' && 'Live Sessions'}
+                    {activeTab === 'resources' && 'Learning Resources'}
+                    {activeTab === 'messages' && 'Messages'}
+                    {showFindTutor && 'Find Your Perfect Mentor'}
+                  </h1>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <button
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    className="p-2 hover:bg-indigo-50 rounded-full text-indigo-600 relative"
+                  >
+                    <Bell className="h-5 w-5" />
+                    {notifications.some(n => !n.read) && (
+                      <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
+                    )}
+                  </button>
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowProfileMenu(!showProfileMenu)}
+                      className="flex items-center space-x-2 p-2 hover:bg-indigo-50 rounded-lg text-indigo-600"
+                    >
+                      <User className="h-5 w-5" />
+                      <span className="text-sm font-medium">{profile?.name}</span>
+                    </button>
+                    <AnimatePresence>
+                      {showProfileMenu && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-20 border border-gray-200"
+                        >
+                          <button
+                            onClick={() => {
+                              setShowProfileEditor(true);
+                              setShowProfileMenu(false);
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-indigo-50"
+                          >
+                            Edit Profile
+                          </button>
+                          <button
+                            onClick={() => {
+                              handleSignOut();
+                              setShowProfileMenu(false);
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                          >
+                            Sign Out
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          {/* Main content area */}
+          <main className="flex-1 overflow-y-auto p-6">
+            <AnimatePresence mode="wait">
+              {renderContent()}
+            </AnimatePresence>
         </main>
         </motion.div>
       </div>
@@ -614,13 +619,18 @@ export function StudentDashboard() {
       {/* Profile editor modal */}
       {showProfileEditor && profile && (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-75 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <motion.div 
+            className="max-w-4xl w-full max-h-[90vh] overflow-y-auto bg-white rounded-xl shadow-xl"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+          >
             <ProfileEditor
               profile={profile}
               onUpdate={handleProfileUpdate}
               onCancel={() => setShowProfileEditor(false)}
             />
-          </div>
+          </motion.div>
         </div>
       )}
     </>
