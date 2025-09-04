@@ -123,12 +123,13 @@ export function SubjectsShowcase() {
                 <motion.div
               key={index}
               variants={itemVariants}
-              className="group relative bg-white/10 backdrop-blur-sm rounded-2xl overflow-hidden hover:bg-white/20 transition-all duration-300"
+              className="group relative bg-white/10 backdrop-blur-sm rounded-2xl overflow-hidden hover:bg-white/20 transition-all duration-300 border border-white/10"
             >
               <div className="relative h-48 overflow-hidden">
                 <img
                   src={subject.image}
                   alt={subject.title}
+                  loading="lazy"
                   className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
@@ -138,6 +139,9 @@ export function SubjectsShowcase() {
                   </div>
                   <h3 className="text-xl font-bold text-white">{subject.title}</h3>
                   <p className="text-sm text-gray-200 mt-1">{subject.description}</p>
+                </div>
+                <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-white/0 via-white/20 to-white/0 [mask-image:linear-gradient(to_right,transparent,black,transparent)]"></div>
                 </div>
               </div>
             </motion.div>

@@ -115,13 +115,16 @@ export function Features() {
             <motion.div
               key={index}
               variants={itemVariants}
-              className="group relative bg-white/10 backdrop-blur-sm rounded-2xl p-6 hover:bg-white/20 transition-all duration-300"
+              className="group relative bg-white/10 backdrop-blur-sm rounded-2xl p-6 hover:bg-white/20 transition-all duration-300 border border-white/10"
             >
               <div className={`flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r ${feature.color} text-white mb-4`}>
                 {feature.icon}
               </div>
               <h3 className="text-xl font-bold text-white mb-2">{feature.title}</h3>
               <p className="text-gray-300 text-sm">{feature.description}</p>
+              <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-white/0 via-white/20 to-white/0 [mask-image:linear-gradient(to_right,transparent,black,transparent)]"></div>
+              </div>
             </motion.div>
           ))}
         </motion.div>

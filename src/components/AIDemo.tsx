@@ -108,7 +108,7 @@ export function AIDemo() {
           >
             <motion.div
               variants={itemVariants}
-              className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 hover:bg-white/20 transition-all duration-300"
+              className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 hover:bg-white/20 transition-all duration-300 border border-white/10"
             >
               <div className="flex items-center space-x-4">
                 <div className="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
@@ -123,7 +123,7 @@ export function AIDemo() {
 
             <motion.div
               variants={itemVariants}
-              className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 hover:bg-white/20 transition-all duration-300"
+              className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 hover:bg-white/20 transition-all duration-300 border border-white/10"
             >
               <div className="flex items-center space-x-4">
                 <div className="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-pink-600 text-white">
@@ -138,7 +138,7 @@ export function AIDemo() {
 
             <motion.div
               variants={itemVariants}
-              className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 hover:bg-white/20 transition-all duration-300"
+              className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 hover:bg-white/20 transition-all duration-300 border border-white/10"
             >
               <div className="flex items-center space-x-4">
                 <div className="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white">
@@ -155,7 +155,7 @@ export function AIDemo() {
           {/* Chat Interface */}
           <motion.div
             variants={itemVariants}
-            className="bg-white/10 backdrop-blur-sm rounded-2xl overflow-hidden"
+            className="bg-white/10 backdrop-blur-sm rounded-2xl overflow-hidden border border-white/10"
           >
             <div className="p-4 border-b border-white/10">
               <div className="flex items-center space-x-3">

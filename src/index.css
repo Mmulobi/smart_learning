@@ -128,3 +128,44 @@ html {
   z-index: 1000;
   transition: transform 0.1s ease-out;
 }
+
+/* Improve scroll smoothness and animation performance */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* GPU hint for transform-heavy elements */
+.gpu {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+/* Only render visible sections */
+.content-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 1000px;
+}
+
+/* Avoid layout shift when scrollbars appear */
+body {
+  scrollbar-gutter: stable both-edges;
+}
+
+/* Subtle shine for hoverable surfaces */
+.shine-on-hover {
+  position: relative;
+  overflow: hidden;
+}
+.shine-on-hover::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+  transform: translateX(-100%);
+  transition: transform 600ms ease;
+  pointer-events: none;
+}
+.shine-on-hover:hover::after {
+  transform: translateX(100%);
+}

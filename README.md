@@ -92,3 +92,26 @@ This project is licensed under the **MIT License**.
 ---
 
 🚀 **Let's revolutionize online tutoring!**
+
+---
+
+## Migration to Next.js + Supabase
+
+This project is being migrated from Vite + React Router to **Next.js (App Router)** with **Supabase** as the database and auth provider.
+
+### Env vars
+Create `.env.local` with:
+```env
+NEXT_PUBLIC_SUPABASE_URL=your-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+### Run (Next.js)
+```sh
+npm install
+npm run dev
+```
+
+- Next entrypoint: `app/page.tsx`
+- Global styles: `app/globals.css` (imports existing `src/index.css`)
+- Supabase client: `src/lib/supabase.ts` (supports Next env vars)
