@@ -56,7 +56,7 @@ export function Settings({ profile, onUpdateProfile }: SettingsProps) {
   };
 
   const renderProfileSettings = () => {
-    const [showProfileEditor, setShowProfileEditor] = useState(false);
+    // const [showProfileEditor, setShowProfileEditor] = useState(false);
     
     if (showProfileEditor) {
       return (

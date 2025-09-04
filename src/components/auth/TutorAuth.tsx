@@ -100,7 +100,7 @@ export function TutorAuth() {
         },
       });
       if (error) throw error;
-    } catch (error: any) {
+    } catch (error) {
       setError(error.message);
     }
   };

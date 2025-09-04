@@ -99,7 +99,7 @@ export function StudentAuth() {
         },
       });
       if (error) throw error;
-    } catch (error: any) {
+    } catch (error) {
       setError(error.message);
     }
   };

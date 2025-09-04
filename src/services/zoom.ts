@@ -8,7 +8,7 @@ const ZOOM_CLIENT_SECRET = 'CTpzLGnH1JDTpPvLjGPXMQPA0M6wFp4M';
 const ZOOM_REDIRECT_URI = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_ZOOM_REDIRECT_URI) || (typeof window !== 'undefined' ? `${window.location.origin}/zoom/callback` : '');
 
 export class ZoomService {
-  static async createMeeting(sessionId: string, tutorId: string, studentId: string) {
+  static async createMeeting(sessionId: string, tutorId: string, _studentId: string) {
     try {
       // Get tutor's Zoom access token
       const supabase = getSupabaseClient();

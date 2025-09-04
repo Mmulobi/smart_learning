@@ -4,7 +4,7 @@ import { Features } from './Features';
 import { AIDemo } from './AIDemo';
 import { TutorMatch } from './TutorMatch';
 import { Testimonials } from './Testimonials';
-import { useEffect, useState } from 'react';
+// import { useEffect, useState } from 'react';
 import { motion, useScroll, useSpring } from 'framer-motion';
 import { Footer } from './Footer';
 

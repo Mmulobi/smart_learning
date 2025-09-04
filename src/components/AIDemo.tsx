@@ -1,6 +1,6 @@
 import { motion, useAnimation } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
-import { Brain, Sparkles, Zap, MessageSquare, Send, Bot, User } from 'lucide-react';
+import { Brain, Sparkles, Zap, Send, Bot, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 const messages = [

@@ -1,9 +1,9 @@
-import { Link } from 'react-router-dom';
-import { useEffect, useRef, Suspense } from 'react';
+// import { Link } from 'react-router-dom';
+import { useRef } from 'react';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
-import { Canvas } from '@react-three/fiber';
+// import { Canvas } from '@react-three/fiber';
 import { Users, BookOpen, Award, Sparkles } from 'lucide-react';
-import { Scene3D } from './Scene3D';
+// import { Scene3D } from './Scene3D';
 
 type Stat = {
   value: string;

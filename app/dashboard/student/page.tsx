@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { getSupabaseClient } from "../../../src/lib/supabase";
-import { motion } from "framer-motion";
+// import { motion } from "framer-motion";
 import { Sparkles, BookOpen, Calendar, Bot, Trophy, Clock } from "lucide-react";
 
 type Recommendation = { title: string; subtitle: string; progress?: number };
@@ -26,10 +26,10 @@ export default function StudentDashboard() {
     ]);
   }, []);
 
-  const subjectsByTrack = useMemo(() => ({
-    CBC: ["Mathematics", "English", "Kiswahili", "Integrated Science", "Social Studies", "Religious Education", "Pre-Technical"],
-    "8-4-4": ["Mathematics", "English", "Kiswahili", "Biology", "Chemistry", "Physics", "Geography", "History", "CRE", "Business Studies"]
-  }), []);
+  // const subjectsByTrack = useMemo(() => ({
+  //   CBC: ["Mathematics", "English", "Kiswahili", "Integrated Science", "Social Studies", "Religious Education", "Pre-Technical"],
+  //   "8-4-4": ["Mathematics", "English", "Kiswahili", "Biology", "Chemistry", "Physics", "Geography", "History", "CRE", "Business Studies"]
+  // }), []);
 
   const levelsCBC = ["Grade 4","Grade 5","Grade 6","Grade 7","Grade 8","Grade 9"];
   const levels844 = ["Form 1","Form 2","Form 3","Form 4"];

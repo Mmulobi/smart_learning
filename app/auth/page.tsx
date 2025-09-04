@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { getSupabaseClient } from "../../src/lib/supabase";
-import { Brain, Mail, Lock, Eye, EyeOff, Facebook, Apple, Github, Loader2 } from "lucide-react";
+import { Brain, Mail, Lock, Eye, EyeOff, Facebook, Apple, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 export default function AuthPage() {
@@ -25,8 +25,8 @@ export default function AuthPage() {
         if (err) throw err;
       }
       window.location.href = "/dashboard/student";
-    } catch (e: any) {
-      setError(e?.message ?? "Something went wrong");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -40,8 +40,8 @@ export default function AuthPage() {
       const { data, error: err } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/dashboard/student` : undefined } });
       if (err) throw err;
       if (data?.url) window.location.href = data.url;
-    } catch (e: any) {
-      setError(e?.message ?? "OAuth failed");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "OAuth failed");
     } finally {
       setLoading(false);
     }
