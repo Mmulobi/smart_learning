@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { getSupabaseClient } from '../lib/supabase';
 import { DatabaseService } from '../services/database';
 import type { Message } from '../types/database';
 
@@ -13,8 +13,9 @@ export function useMessages(senderId: string, receiverId: string) {
       try {
         const messages = await DatabaseService.getMessages(senderId, receiverId);
         setMessages(messages);
-      } catch (error: any) {
-        setError(error.message);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to load messages';
+        setError(message);
       } finally {
         setLoading(false);
       }
@@ -23,6 +24,7 @@ export function useMessages(senderId: string, receiverId: string) {
     loadMessages();
 
     // Set up real-time subscription
+    const supabase = getSupabaseClient();
     const subscription = supabase
       .channel('messages')
       .on(
@@ -59,8 +61,9 @@ export function useMessages(senderId: string, receiverId: string) {
         receiver_id: receiverId,
         content,
       });
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to send message';
+      setError(message);
       throw error;
     }
   };

@@ -421,10 +421,13 @@ export class DatabaseService {
     }
   }
 
-  static async getTutorEarningsHistory(tutorId: string, timeRange: string): Promise<any[]> {
+  static async getTutorEarningsHistory(
+    tutorId: string,
+    timeRange: 'week' | 'month' | 'quarter' | 'year'
+  ): Promise<Array<{ id: string; date: string; amount: number; duration: number; session_title: string; student_name: string }>> {
     try {
       const now = new Date();
-      let startDate = new Date();
+      const startDate = new Date();
 
       switch (timeRange) {
         case 'week':
@@ -502,7 +505,7 @@ export class DatabaseService {
     }
   }
 
-  static async getTutorStudents(tutorId: string): Promise<any[]> {
+  static async getTutorStudents(tutorId: string): Promise<Array<{ id: string; name: string; email: string; subjects: unknown; session_count: number }>> {
     try {
       const { data, error } = await supabase
         .from('sessions')
@@ -522,8 +525,8 @@ export class DatabaseService {
       if (!data) return [];
 
       // Get unique students and count their sessions
-      const uniqueStudents = new Map();
-      data.forEach(session => {
+      const uniqueStudents = new Map<string, { id: string; name: string; email: string; subjects: unknown; session_count: number }>();
+      data.forEach((session: { student_profiles?: Array<{ id: string; name: string; email: string; subjects: unknown }> }) => {
         const student = session.student_profiles?.[0];
         if (student && !uniqueStudents.has(student.id)) {
           uniqueStudents.set(student.id, {
@@ -531,7 +534,8 @@ export class DatabaseService {
             session_count: 1
           });
         } else if (student) {
-          uniqueStudents.get(student.id).session_count++;
+          const entry = uniqueStudents.get(student.id);
+          if (entry) entry.session_count++;
         }
       });
 

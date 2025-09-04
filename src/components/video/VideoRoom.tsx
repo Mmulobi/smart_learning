@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { WebRTCService } from '../../services/webrtc';
-import { supabase } from '../../lib/supabase';
+import { getSupabaseClient } from '../../lib/supabase';
 import { Session } from '../../types/database';
 
 interface VideoRoomProps {
@@ -11,31 +11,31 @@ interface VideoRoomProps {
 export const VideoRoom: React.FC<VideoRoomProps> = ({ session, onLeave }) => {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
-  const [isConnected, setIsConnected] = useState(false);
+  // Connection state can be derived from streams; avoid unused state
   const [error, setError] = useState<string | null>(null);
   const webrtcService = useRef(WebRTCService.getInstance());
 
   useEffect(() => {
     const initializeCall = async () => {
       try {
+        const supabase = getSupabaseClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not found');
 
         const isTutor = user.id === session.tutor_id;
-        await webrtcService.current.initializeCall(session.id, isTutor);
+        const svc = webrtcService.current;
+        await svc.initializeCall(session.id, isTutor);
 
-        const localStream = await webrtcService.current.getLocalStream();
+        const localStream = await svc.getLocalStream();
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = localStream;
         }
 
-        webrtcService.current.onRemoteStream((stream) => {
+        svc.onRemoteStream((stream) => {
           if (remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = stream;
           }
         });
-
-        setIsConnected(true);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to connect to video call');
       }
@@ -44,13 +44,15 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({ session, onLeave }) => {
     initializeCall();
 
     return () => {
-      webrtcService.current.cleanup();
+      const svc = webrtcService.current;
+      svc.cleanup();
     };
   }, [session.id, session.tutor_id]);
 
   const handleLeave = async () => {
     try {
-      await webrtcService.current.cleanup();
+      const svc = webrtcService.current;
+      await svc.cleanup();
       onLeave();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to leave the call');

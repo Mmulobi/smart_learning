@@ -10,3 +10,6 @@ export function getSupabaseClient(): SupabaseClient {
 
   return createClient(supabaseUrl, supabaseAnonKey);
 }
+
+// Optional convenience export for legacy imports. Assumes env vars are set.
+export const supabase = getSupabaseClient();

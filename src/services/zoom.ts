@@ -1,16 +1,17 @@
-import { supabase } from '../lib/supabase';
+import { getSupabaseClient } from '../lib/supabase';
 
 // Update these with your actual Zoom Marketplace App credentials
 const ZOOM_CLIENT_ID = 'rqEK9FnGRVmj1uwG2a9nlw';
 const ZOOM_CLIENT_SECRET = 'CTpzLGnH1JDTpPvLjGPXMQPA0M6wFp4M';
 
 // Use environment variable for redirect URI, fallback to window.location.origin
-const ZOOM_REDIRECT_URI = import.meta.env.VITE_ZOOM_REDIRECT_URI || `${window.location.origin}/zoom/callback`;
+const ZOOM_REDIRECT_URI = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_ZOOM_REDIRECT_URI) || (typeof window !== 'undefined' ? `${window.location.origin}/zoom/callback` : '');
 
 export class ZoomService {
   static async createMeeting(sessionId: string, tutorId: string, studentId: string) {
     try {
       // Get tutor's Zoom access token
+      const supabase = getSupabaseClient();
       const { data: tutorData, error: tutorError } = await supabase
         .from('tutor_profiles')
         .select('zoom_access_token')
